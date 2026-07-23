@@ -1,0 +1,13 @@
+# CCS build products and generated files
+car_1_1/Debug/
+car_1_1/Release/
+
+# Local IDE and Codex workspace state
+.theia/
+.codex/
+.agents/
+
+# Editor files
+.vscode/
+*.bak
+*.tmp
