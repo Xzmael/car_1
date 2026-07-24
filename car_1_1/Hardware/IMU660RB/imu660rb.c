@@ -9,6 +9,8 @@
 #define I2C_TIMEOUT        (100000U)
 #define CAL_TIMEOUT        (5000000U)
 #define I2C_START_DELAY    (1000U)
+/* Measured residual yaw drift is -0.1 deg/s while the vehicle is still. */
+#define YAW_DRIFT_COMPENSATION_DPS (0.1f)
 
 #define ODR_COEFF_12Hz5   (512)
 #define ODR_COEFF_26Hz    (256)
@@ -31,6 +33,7 @@ static int16_t data_raw_angular_rate[3];
 static uint8_t whoamI, rst;
 static uint8_t imuStage;
 static float samplePeriod, sampleRate;
+static float yawDriftCompensation;
 static uint32_t lastTick;
 static IMU660RB_Status imuStatus = IMU660RB_STATUS_I2C_ERROR;
 
@@ -107,6 +110,7 @@ IMU660RB_Status IMU660RB_Init(void)
 
     FusionAhrsInitialise(&ahrs);
     FusionOffsetInitialise(&offset, sampleRate);
+    yawDriftCompensation = 0.0f;
 
     /* Use a free-running CPU-clock timer to measure each real update interval. */
     SysTick->LOAD = 0x00FFFFFFU;
@@ -167,6 +171,12 @@ IMU660RB_Status Read_IMU660RB(void)
 
     FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
     euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+    /* Counteract the measured negative drift using the actual sample interval. */
+    yawDriftCompensation += YAW_DRIFT_COMPENSATION_DPS * samplePeriod;
+    while (yawDriftCompensation > 180.0f) yawDriftCompensation -= 360.0f;
+    euler.angle.yaw += yawDriftCompensation;
+    while (euler.angle.yaw > 180.0f) euler.angle.yaw -= 360.0f;
+    while (euler.angle.yaw <= -180.0f) euler.angle.yaw += 360.0f;
     return imuStatus;
 }
 
