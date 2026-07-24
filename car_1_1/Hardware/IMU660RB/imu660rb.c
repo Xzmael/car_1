@@ -9,8 +9,6 @@
 #define I2C_TIMEOUT        (100000U)
 #define CAL_TIMEOUT        (5000000U)
 #define I2C_START_DELAY    (1000U)
-#define YAW_BIAS_SAMPLES   (100U)
-#define YAW_BIAS_SAMPLE_MS (20U)
 
 #define ODR_COEFF_12Hz5   (512)
 #define ODR_COEFF_26Hz    (256)
@@ -51,7 +49,6 @@ static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t 
 static void platform_delay(uint32_t ms);
 static bool i2c_wait_idle(void);
 static bool i2c_wait_complete(void);
-static bool calibrate_yaw_bias(void);
 
 IMU660RB_Status IMU660RB_Init(void)
 {
@@ -110,10 +107,6 @@ IMU660RB_Status IMU660RB_Init(void)
 
     FusionAhrsInitialise(&ahrs);
     FusionOffsetInitialise(&offset, sampleRate);
-
-    /* The vehicle must remain still while measuring its horizontal yaw bias. */
-    imuStage = 8U;
-    if (!calibrate_yaw_bias()) return imuStatus;
 
     /* Use a free-running CPU-clock timer to measure each real update interval. */
     SysTick->LOAD = 0x00FFFFFFU;
@@ -175,25 +168,6 @@ IMU660RB_Status Read_IMU660RB(void)
     FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
     euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
     return imuStatus;
-}
-
-static bool calibrate_yaw_bias(void)
-{
-    int32_t sum = 0;
-    uint16_t index;
-
-    for (index = 0U; index < YAW_BIAS_SAMPLES; index++) {
-        platform_delay(YAW_BIAS_SAMPLE_MS);
-        if (lsm6dsr_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate) != 0) {
-            return false;
-        }
-        /* Sensor face-down mapping: vehicle yaw is negative sensor Z. */
-        sum -= data_raw_angular_rate[2];
-    }
-
-    gyroscopeOffset.axis.z = lsm6dsr_from_fs2000dps_to_mdps(
-        (int16_t) (sum / (int32_t) YAW_BIAS_SAMPLES)) / 1000.0f;
-    return true;
 }
 
 static bool i2c_wait_idle(void)
