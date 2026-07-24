@@ -3,14 +3,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "buzzer.h"
 #include "gray.h"
 #include "key.h"
+#include "led.h"
 #include "motor.h"
 #include "oled.h"
 #include "IMU660RB/imu660rb.h"
 
 #define TASK_COUNT (4U)
 #define TASK1_DUTY (30U)
+/* These loop counts give a visible blink and one short beep without blocking control. */
+#define TASK1_LED_FLASH_TICKS (160U)
+#define TASK1_BUZZER_TICKS (60U)
 
 typedef enum {
     TASK_MANAGER_MENU = 0,
@@ -23,6 +28,40 @@ static TaskManager_State taskState;
 static uint8_t selectedTask;
 static uint8_t displayDivider;
 static bool lineStopped;
+static bool alarmActive;
+static uint16_t ledFlashTicks;
+static uint16_t buzzerTicks;
+
+static void TaskManager_ClearAlarm(void)
+{
+    alarmActive = false;
+    ledFlashTicks = 0U;
+    buzzerTicks = 0U;
+    LED_Off();
+    Buzzer_Off();
+}
+
+static void TaskManager_StartAlarm(void)
+{
+    alarmActive = true;
+    ledFlashTicks = 0U;
+    buzzerTicks = 0U;
+    LED_On();
+    Buzzer_On();
+}
+
+static void TaskManager_UpdateAlarm(void)
+{
+    if (!alarmActive) return;
+
+    if (++ledFlashTicks >= TASK1_LED_FLASH_TICKS) {
+        ledFlashTicks = 0U;
+        LED_Toggle();
+    }
+    if (++buzzerTicks >= TASK1_BUZZER_TICKS) {
+        Buzzer_Off();
+    }
+}
 
 static void TaskManager_Refresh(void)
 {
@@ -99,6 +138,7 @@ static void TaskManager_ShowTask1(void)
 static void TaskManager_ReturnToMenu(void)
 {
     Motor_Stop();
+    TaskManager_ClearAlarm();
     taskState = TASK_MANAGER_MENU;
     lineStopped = false;
     displayDivider = 0U;
@@ -112,6 +152,7 @@ static void TaskManager_StartTask1(void)
     Motor_Stop();
     lineStopped = false;
     displayDivider = 0U;
+    TaskManager_ClearAlarm();
     if (status != IMU660RB_STATUS_OK) {
         taskState = TASK_MANAGER_IMU_FAULT;
         TaskManager_ShowImuFault(status);
@@ -121,6 +162,7 @@ static void TaskManager_StartTask1(void)
     Gray_Read();
     if (Gray_GetResult().blackCount != 0U) {
         lineStopped = true;
+        TaskManager_StartAlarm();
     } else {
         Motor_HoldYawStart(TASK1_DUTY);
     }
@@ -135,6 +177,7 @@ void TaskManager_Init(void)
     displayDivider = 0U;
     lineStopped = false;
     Motor_Stop();
+    TaskManager_ClearAlarm();
     TaskManager_ShowMenu();
 }
 
@@ -163,6 +206,7 @@ void TaskManager_Run(void)
                     TaskManager_StartTask1();
                 } else {
                     Motor_Stop();
+                    TaskManager_ClearAlarm();
                     taskState = TASK_MANAGER_PLACEHOLDER;
                     TaskManager_ShowPlaceholder();
                 }
@@ -176,6 +220,7 @@ void TaskManager_Run(void)
             Gray_Read();
             if (status != IMU660RB_STATUS_OK) {
                 Motor_Stop();
+                TaskManager_ClearAlarm();
                 taskState = TASK_MANAGER_IMU_FAULT;
                 TaskManager_ShowImuFault(status);
                 continue;
@@ -183,11 +228,14 @@ void TaskManager_Run(void)
             if (!lineStopped && Gray_GetResult().blackCount != 0U) {
                 lineStopped = true;
                 Motor_Stop();
+                TaskManager_StartAlarm();
                 TaskManager_ShowTask1();
                 displayDivider = 0U;
             }
             if (!lineStopped) {
                 Motor_HoldYawUpdate(euler.angle.yaw);
+            } else {
+                TaskManager_UpdateAlarm();
             }
             if (++displayDivider >= 4U) {
                 displayDivider = 0U;
