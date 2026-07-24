@@ -20,6 +20,8 @@ void OLED_SetCursor(uint8_t x, uint8_t y);
 void OLED_WriteChar(char character);
 void OLED_WriteString(const char *text);
 void OLED_WriteUInt(uint32_t value);
+void OLED_WriteInt(int32_t value);
+void OLED_WriteFloat2(float value);
 void OLED_DrawPixel(uint8_t x, uint8_t y, bool on);
 void OLED_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool on);
 void OLED_DrawRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool on);

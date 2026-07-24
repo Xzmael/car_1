@@ -6,7 +6,9 @@
 
 #define OLED_ADDRESS       (0x3CU)
 #define OLED_BUFFER_SIZE   ((OLED_WIDTH * OLED_HEIGHT) / 8U)
-#define OLED_I2C_DELAY     (64U)
+/* Use a conservative software-I2C rate to tolerate motor and sensor noise. */
+#define OLED_I2C_DELAY     (256U)
+#define OLED_PAGE_RETRIES  (3U)
 
 static uint8_t oledBuffer[OLED_BUFFER_SIZE];
 static uint8_t cursorX;
@@ -122,6 +124,8 @@ static const uint8_t *OLED_Glyph(char character)
 {
     static const uint8_t blank[5] = {0U, 0U, 0U, 0U, 0U};
     static const uint8_t question[5] = {0x02U, 0x01U, 0x51U, 0x09U, 0x06U};
+    static const uint8_t minus[5] = {0x08U, 0x08U, 0x08U, 0x08U, 0x08U};
+    static const uint8_t decimalPoint[5] = {0x00U, 0x60U, 0x60U, 0x00U, 0x00U};
     static const uint8_t digits[10][5] = {
         {0x3EU, 0x51U, 0x49U, 0x45U, 0x3EU}, {0x00U, 0x42U, 0x7FU, 0x40U, 0x00U},
         {0x42U, 0x61U, 0x51U, 0x49U, 0x46U}, {0x21U, 0x41U, 0x45U, 0x4BU, 0x31U},
@@ -148,6 +152,8 @@ static const uint8_t *OLED_Glyph(char character)
     if ((character >= '0') && (character <= '9')) return digits[character - '0'];
     if ((character >= 'A') && (character <= 'Z')) return letters[character - 'A'];
     if (character == ' ') return blank;
+    if (character == '-') return minus;
+    if (character == '.') return decimalPoint;
     return question;
 }
 
@@ -160,6 +166,8 @@ OLED_Status OLED_Init(void)
 
     OLED_SCL_High();
     OLED_SDA_High();
+    /* The controller requires a delay after its supply reaches operating voltage. */
+    delay_cycles(3200000U);
     OLED_Clear();
     for (i = 0U; i < sizeof(sequence); i++) {
         if (OLED_Command(sequence[i]) != OLED_STATUS_OK) return OLED_STATUS_NACK;
@@ -170,13 +178,22 @@ OLED_Status OLED_Init(void)
 OLED_Status OLED_Refresh(void)
 {
     uint8_t page;
+    uint8_t attempt;
     OLED_Status status;
 
     for (page = 0U; page < 8U; page++) {
-        if ((OLED_Command((uint8_t) (0xB0U + page)) != OLED_STATUS_OK) ||
-            (OLED_Command(0x00U) != OLED_STATUS_OK) ||
-            (OLED_Command(0x10U) != OLED_STATUS_OK)) return OLED_STATUS_NACK;
-        status = OLED_Send(0x40U, &oledBuffer[(uint16_t) page * OLED_WIDTH], OLED_WIDTH);
+        status = OLED_STATUS_NACK;
+        for (attempt = 0U; attempt < OLED_PAGE_RETRIES; attempt++) {
+            if ((OLED_Command((uint8_t) (0xB0U + page)) == OLED_STATUS_OK) &&
+                (OLED_Command(0x00U) == OLED_STATUS_OK) &&
+                (OLED_Command(0x10U) == OLED_STATUS_OK)) {
+                status = OLED_Send(0x40U,
+                    &oledBuffer[(uint16_t) page * OLED_WIDTH], OLED_WIDTH);
+            }
+            if (status == OLED_STATUS_OK) break;
+            /* A stop has been sent by OLED_Send; let the bus return high before retrying. */
+            delay_cycles(OLED_I2C_DELAY * 8U);
+        }
         if (status != OLED_STATUS_OK) return status;
     }
     return OLED_STATUS_OK;
@@ -191,7 +208,7 @@ void OLED_Clear(void)
 
 void OLED_SetCursor(uint8_t x, uint8_t y)
 {
-    cursorX = x;
+    cursorX = (x < OLED_WIDTH) ? x : 0U;
     cursorY = y;
 }
 
@@ -209,7 +226,12 @@ void OLED_WriteChar(char character)
 {
     const uint8_t *glyph = OLED_Glyph(character);
     uint8_t column, row;
-    if ((cursorX + 5U) >= OLED_WIDTH) { cursorX = 0U; cursorY = (uint8_t) (cursorY + 8U); }
+    if ((cursorX + 5U) >= OLED_WIDTH) {
+        cursorX = 0U;
+        cursorY = (uint8_t) (cursorY + 8U);
+    }
+    /* Do not write past the eight display pages when a string wraps. */
+    if (cursorY > (OLED_HEIGHT - 8U)) return;
     for (column = 0U; column < 5U; column++) {
         for (row = 0U; row < 7U; row++) OLED_DrawPixel((uint8_t) (cursorX + column), (uint8_t) (cursorY + row), ((glyph[column] >> row) & 1U) != 0U);
     }
@@ -227,6 +249,37 @@ void OLED_WriteUInt(uint32_t value)
     uint8_t length = 0U;
     do { text[length++] = (char) ('0' + (value % 10U)); value /= 10U; } while (value != 0U);
     while (length > 0U) OLED_WriteChar(text[--length]);
+}
+
+void OLED_WriteInt(int32_t value)
+{
+    if (value < 0) {
+        OLED_WriteChar('-');
+        OLED_WriteUInt((uint32_t) (-(value + 1)) + 1U);
+    } else {
+        OLED_WriteUInt((uint32_t) value);
+    }
+}
+
+void OLED_WriteFloat2(float value)
+{
+    int32_t scaled;
+    uint32_t magnitude;
+
+    /* Round to the displayed hundredth before splitting integer and fraction. */
+    scaled = (int32_t) ((value >= 0.0f) ? (value * 100.0f + 0.5f) :
+                                           (value * 100.0f - 0.5f));
+    if (scaled < 0) {
+        OLED_WriteChar('-');
+        magnitude = (uint32_t) (-(scaled + 1)) + 1U;
+    } else {
+        magnitude = (uint32_t) scaled;
+    }
+
+    OLED_WriteUInt(magnitude / 100U);
+    OLED_WriteChar('.');
+    OLED_WriteChar((char) ('0' + ((magnitude / 10U) % 10U)));
+    OLED_WriteChar((char) ('0' + (magnitude % 10U)));
 }
 
 void OLED_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool on)
