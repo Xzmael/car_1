@@ -151,8 +151,8 @@ static void TaskManager_ShowTask1(void)
     OLED_WriteString(" R:");
     OLED_WriteUInt(motor.rightDuty);
     OLED_SetCursor(0U, 32U);
-    OLED_WriteString("E:");
-    OLED_WriteFloat2(motor.yawError);
+    OLED_WriteString("RAW:");
+    OLED_WriteUInt(gray.raw);
     OLED_SetCursor(0U, 48U);
     OLED_WriteString(lineStopped ? "STOP N:" : "GO N:");
     OLED_WriteUInt(gray.blackCount);
