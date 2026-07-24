@@ -12,12 +12,13 @@
 #include "IMU660RB/imu660rb.h"
 
 #define TASK_COUNT (4U)
-#define TASK1_DUTY (30U)
+#define TASK1_DUTY (20U)
 /* These loop counts give a visible blink and one short beep without blocking control. */
 #define TASK1_LED_FLASH_TICKS (160U)
 #define TASK1_BUZZER_TICKS (60U)
-/* Ignore sensor startup transients until the car has seen a stable white floor. */
-#define TASK1_CLEAR_SAMPLES_TO_ARM (3U)
+/* Briefly ignore sensor power-up transients, then always enable black-line stop. */
+#define TASK1_GRAY_STARTUP_TICKS (20U)
+#define TASK1_BLACK_SAMPLES_TO_STOP (2U)
 
 typedef enum {
     TASK_MANAGER_MENU = 0,
@@ -33,7 +34,8 @@ static bool lineStopped;
 static bool alarmActive;
 static uint16_t ledFlashTicks;
 static uint16_t buzzerTicks;
-static uint8_t clearSampleCount;
+static uint8_t grayStartupTicks;
+static uint8_t blackSampleCount;
 static bool grayStopArmed;
 
 static void TaskManager_ClearAlarm(void)
@@ -48,16 +50,19 @@ static void TaskManager_ClearAlarm(void)
 static bool TaskManager_GrayStopDetected(void)
 {
     if (!grayStopArmed) {
-        if (Gray_GetResult().blackCount == 0U) {
-            if (++clearSampleCount >= TASK1_CLEAR_SAMPLES_TO_ARM) {
-                grayStopArmed = true;
-            }
-        } else {
-            clearSampleCount = 0U;
+        if (++grayStartupTicks >= TASK1_GRAY_STARTUP_TICKS) {
+            grayStopArmed = true;
         }
         return false;
     }
-    return Gray_GetResult().blackCount != 0U;
+    if (Gray_GetRaw() != 0U) {
+        if (++blackSampleCount >= TASK1_BLACK_SAMPLES_TO_STOP) {
+            return true;
+        }
+    } else {
+        blackSampleCount = 0U;
+    }
+    return false;
 }
 
 static void TaskManager_StartAlarm(void)
@@ -161,7 +166,8 @@ static void TaskManager_ReturnToMenu(void)
     taskState = TASK_MANAGER_MENU;
     lineStopped = false;
     displayDivider = 0U;
-    clearSampleCount = 0U;
+    grayStartupTicks = 0U;
+    blackSampleCount = 0U;
     grayStopArmed = false;
     TaskManager_ShowMenu();
 }
@@ -173,7 +179,8 @@ static void TaskManager_StartTask1(void)
     Motor_Stop();
     lineStopped = false;
     displayDivider = 0U;
-    clearSampleCount = 0U;
+    grayStartupTicks = 0U;
+    blackSampleCount = 0U;
     grayStopArmed = false;
     TaskManager_ClearAlarm();
     if (status != IMU660RB_STATUS_OK) {
@@ -182,7 +189,7 @@ static void TaskManager_StartTask1(void)
         return;
     }
 
-    /* Start immediately; arm black-line stopping only after stable white samples. */
+    /* Start immediately; enable stop detection after the sensor power-up settles. */
     Motor_HoldYawStart(TASK1_DUTY);
     taskState = TASK_MANAGER_TASK1;
     TaskManager_ShowTask1();
@@ -194,7 +201,8 @@ void TaskManager_Init(void)
     selectedTask = 1U;
     displayDivider = 0U;
     lineStopped = false;
-    clearSampleCount = 0U;
+    grayStartupTicks = 0U;
+    blackSampleCount = 0U;
     grayStopArmed = false;
     Motor_Stop();
     TaskManager_ClearAlarm();
