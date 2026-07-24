@@ -9,10 +9,11 @@ void Buzzer_Init(void)
 
 void Buzzer_On(void)
 {
-    DL_GPIO_setPins(BUZZER_PORT, BUZZER_BUZZER_PIN_PIN);
+    /* PB23 buzzer is active low. */
+    DL_GPIO_clearPins(BUZZER_PORT, BUZZER_BUZZER_PIN_PIN);
 }
 
 void Buzzer_Off(void)
 {
-    DL_GPIO_clearPins(BUZZER_PORT, BUZZER_BUZZER_PIN_PIN);
+    DL_GPIO_setPins(BUZZER_PORT, BUZZER_BUZZER_PIN_PIN);
 }
