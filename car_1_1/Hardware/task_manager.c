@@ -16,6 +16,8 @@
 /* These loop counts give a visible blink and one short beep without blocking control. */
 #define TASK1_LED_FLASH_TICKS (160U)
 #define TASK1_BUZZER_TICKS (60U)
+/* Ignore sensor startup transients until the car has seen a stable white floor. */
+#define TASK1_CLEAR_SAMPLES_TO_ARM (3U)
 
 typedef enum {
     TASK_MANAGER_MENU = 0,
@@ -31,6 +33,8 @@ static bool lineStopped;
 static bool alarmActive;
 static uint16_t ledFlashTicks;
 static uint16_t buzzerTicks;
+static uint8_t clearSampleCount;
+static bool grayStopArmed;
 
 static void TaskManager_ClearAlarm(void)
 {
@@ -39,6 +43,21 @@ static void TaskManager_ClearAlarm(void)
     buzzerTicks = 0U;
     LED_Off();
     Buzzer_Off();
+}
+
+static bool TaskManager_GrayStopDetected(void)
+{
+    if (!grayStopArmed) {
+        if (Gray_GetResult().blackCount == 0U) {
+            if (++clearSampleCount >= TASK1_CLEAR_SAMPLES_TO_ARM) {
+                grayStopArmed = true;
+            }
+        } else {
+            clearSampleCount = 0U;
+        }
+        return false;
+    }
+    return Gray_GetResult().blackCount != 0U;
 }
 
 static void TaskManager_StartAlarm(void)
@@ -142,6 +161,8 @@ static void TaskManager_ReturnToMenu(void)
     taskState = TASK_MANAGER_MENU;
     lineStopped = false;
     displayDivider = 0U;
+    clearSampleCount = 0U;
+    grayStopArmed = false;
     TaskManager_ShowMenu();
 }
 
@@ -152,6 +173,8 @@ static void TaskManager_StartTask1(void)
     Motor_Stop();
     lineStopped = false;
     displayDivider = 0U;
+    clearSampleCount = 0U;
+    grayStopArmed = false;
     TaskManager_ClearAlarm();
     if (status != IMU660RB_STATUS_OK) {
         taskState = TASK_MANAGER_IMU_FAULT;
@@ -159,13 +182,8 @@ static void TaskManager_StartTask1(void)
         return;
     }
 
-    Gray_Read();
-    if (Gray_GetResult().blackCount != 0U) {
-        lineStopped = true;
-        TaskManager_StartAlarm();
-    } else {
-        Motor_HoldYawStart(TASK1_DUTY);
-    }
+    /* Start immediately; arm black-line stopping only after stable white samples. */
+    Motor_HoldYawStart(TASK1_DUTY);
     taskState = TASK_MANAGER_TASK1;
     TaskManager_ShowTask1();
 }
@@ -176,6 +194,8 @@ void TaskManager_Init(void)
     selectedTask = 1U;
     displayDivider = 0U;
     lineStopped = false;
+    clearSampleCount = 0U;
+    grayStopArmed = false;
     Motor_Stop();
     TaskManager_ClearAlarm();
     TaskManager_ShowMenu();
@@ -225,7 +245,7 @@ void TaskManager_Run(void)
                 TaskManager_ShowImuFault(status);
                 continue;
             }
-            if (!lineStopped && Gray_GetResult().blackCount != 0U) {
+            if (!lineStopped && TaskManager_GrayStopDetected()) {
                 lineStopped = true;
                 Motor_Stop();
                 TaskManager_StartAlarm();
