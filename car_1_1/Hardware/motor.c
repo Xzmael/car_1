@@ -5,11 +5,14 @@
 
 #define MOTOR_PWM_PERIOD       (1600U)
 #define MOTOR_MAX_DUTY         (100U)
-#define MOTOR_MAX_DIFFERENTIAL (20.0f)
+#define MOTOR_MAX_DIFFERENTIAL (5.0f)
 #define MOTOR_YAW_P_GAIN       (1.0f)
+#define MOTOR_YAW_DEADBAND     (1.5f)
+#define MOTOR_YAW_JUMP_LIMIT   (15.0f)
 
 static Motor_Status motorStatus;
 static uint8_t motorBaseDuty;
+static float motorLastYaw;
 
 static uint8_t Motor_ClampDuty(float duty)
 {
@@ -78,6 +81,7 @@ void Motor_HoldYawStart(uint8_t duty)
     if (duty > MOTOR_MAX_DUTY) duty = MOTOR_MAX_DUTY;
     motorBaseDuty = duty;
     motorStatus.targetYaw = euler.angle.yaw;
+    motorLastYaw = euler.angle.yaw;
     motorStatus.yawError = 0.0f;
     Motor_SetForward(duty);
 }
@@ -86,8 +90,22 @@ void Motor_HoldYawUpdate(float yaw)
 {
     float correction;
     if (!motorStatus.running) return;
+
+    /* Ignore a single implausible IMU heading jump instead of forcing a sharp turn. */
+    if (Motor_NormalizeAngle(yaw - motorLastYaw) > MOTOR_YAW_JUMP_LIMIT ||
+        Motor_NormalizeAngle(yaw - motorLastYaw) < -MOTOR_YAW_JUMP_LIMIT) {
+        motorStatus.targetYaw = yaw;
+        motorStatus.yawError = 0.0f;
+        motorLastYaw = yaw;
+        Motor_SetDuty(motorBaseDuty, motorBaseDuty);
+        return;
+    }
+    motorLastYaw = yaw;
     motorStatus.yawError = Motor_NormalizeAngle(motorStatus.targetYaw - yaw);
     correction = motorStatus.yawError * MOTOR_YAW_P_GAIN;
+    if ((correction < MOTOR_YAW_DEADBAND) && (correction > -MOTOR_YAW_DEADBAND)) {
+        correction = 0.0f;
+    }
     if (correction > MOTOR_MAX_DIFFERENTIAL) correction = MOTOR_MAX_DIFFERENTIAL;
     else if (correction < -MOTOR_MAX_DIFFERENTIAL) correction = -MOTOR_MAX_DIFFERENTIAL;
     Motor_SetDuty(Motor_ClampDuty((float) motorBaseDuty + correction),
