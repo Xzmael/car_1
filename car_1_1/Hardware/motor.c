@@ -5,8 +5,8 @@
 
 #define MOTOR_PWM_PERIOD       (1600U)
 #define MOTOR_MAX_DUTY         (100U)
-#define MOTOR_MAX_DIFFERENTIAL (2.0f)
-#define MOTOR_YAW_P_GAIN       (0.30f)
+#define MOTOR_MAX_DIFFERENTIAL (3.0f)
+#define MOTOR_YAW_P_GAIN       (0.45f)
 #define MOTOR_YAW_DEADBAND     (4.0f)
 #define MOTOR_YAW_JUMP_LIMIT   (15.0f)
 
