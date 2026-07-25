@@ -47,7 +47,7 @@ static void Task2_ShowStatus(void)
     if (!motorStarted) OLED_WriteString("WAIT");
     else if (lineOutput.mode == LINE_CONTROL_LOST) OLED_WriteString("LOST");
     else if (lineOutput.mode == LINE_CONTROL_ALL_BLACK) OLED_WriteString("ALL");
-    else if (lineOutput.mode == LINE_CONTROL_TURN_STOP) OLED_WriteString("TURN STOP");
+    else if (lineOutput.mode == LINE_CONTROL_TURN_FORWARD) OLED_WriteString("TURN GO");
     else if (lineOutput.mode == LINE_CONTROL_HARD_LEFT) OLED_WriteString("HARD L");
     else if (lineOutput.mode == LINE_CONTROL_HARD_RIGHT) OLED_WriteString("HARD R");
     else OLED_WriteString("LINE");
