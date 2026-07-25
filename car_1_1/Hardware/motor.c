@@ -102,13 +102,9 @@ void Motor_HoldYawUpdate(float yaw)
     float correction;
     if (!motorStatus.running) return;
 
-    /* Ignore a single implausible IMU heading jump instead of forcing a sharp turn. */
+    /* Ignore one implausible IMU frame without changing the locked heading. */
     if (Motor_NormalizeAngle(yaw - motorLastYaw) > MOTOR_YAW_JUMP_LIMIT ||
         Motor_NormalizeAngle(yaw - motorLastYaw) < -MOTOR_YAW_JUMP_LIMIT) {
-        motorStatus.targetYaw = yaw;
-        motorStatus.yawError = 0.0f;
-        motorLastYaw = yaw;
-        Motor_SetDuty(motorBaseDuty, motorBaseDuty);
         return;
     }
     motorLastYaw = yaw;
