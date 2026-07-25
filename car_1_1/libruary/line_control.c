@@ -2,7 +2,7 @@
 
 #define LINE_BASE_DUTY       (15)
 #define LINE_ALL_BLACK_DUTY  (12)
-#define LINE_HARD_OUTER_DUTY (22)
+#define LINE_HARD_OUTER_DUTY (12)
 #define LINE_MAX_CORRECTION  (10)
 #define LINE_P_GAIN          (0.75f)
 #define LINE_D_GAIN          (0.90f)
