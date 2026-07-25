@@ -5,6 +5,7 @@
 
 #define BOOT_TIME         (10)
 #define OFFSET_CAL_TIME   (50)
+#define OFFSET_CAL_SAMPLE_MS (20U)
 #define I2C_ADDRESS        (0x6AU)
 #define I2C_TIMEOUT        (100000U)
 #define CAL_TIMEOUT        (5000000U)
@@ -139,6 +140,9 @@ IMU660RB_Status IMU660RB_Init(void)
             gyroscopeOffset.axis.y -= angular_rate_mdps[0] / 1000.0f;
             gyroscopeOffset.axis.z -= angular_rate_mdps[2] / 1000.0f;
             offsetCount--;
+
+            /* Wait for the next 52 Hz frame; do not average one stale sample 50 times. */
+            platform_delay(OFFSET_CAL_SAMPLE_MS);
         }
         if (--calibrationTimeout == 0U) {
             imuStatus = IMU660RB_STATUS_TIMEOUT;
