@@ -31,6 +31,7 @@ static int16_t data_raw_angular_rate[3];
 static uint8_t whoamI, rst;
 static uint8_t imuStage;
 static float samplePeriod, sampleRate;
+static uint32_t lastTick;
 static IMU660RB_Status imuStatus = IMU660RB_STATUS_I2C_ERROR;
 
 static FusionMatrix gyroscopeMisalignment = {{{1.0f, 0.0f, 0.0f},
@@ -53,14 +54,11 @@ IMU660RB_Status IMU660RB_Init(void)
 {
     int8_t freq_fine;
     uint32_t calibrationTimeout;
-    uint8_t offsetCount;
 
     /* Initialize mems driver interface */
     dev_ctx.write_reg = platform_write;
     dev_ctx.read_reg = platform_read;
     dev_ctx.mdelay = platform_delay;
-    imuStatus = IMU660RB_STATUS_I2C_ERROR;
-    gyroscopeOffset = (FusionVector) {{0.0f, 0.0f, 0.0f}};
 
     /* Wait sensor boot time */
     platform_delay(BOOT_TIME);
@@ -110,35 +108,11 @@ IMU660RB_Status IMU660RB_Init(void)
     FusionAhrsInitialise(&ahrs);
     FusionOffsetInitialise(&offset, sampleRate);
 
-    /* Match the reference algorithm: calibrate 50 stationary gyro samples. */
-    platform_delay(200U);
-    imuStage = 8U;
-    offsetCount = OFFSET_CAL_TIME;
-    calibrationTimeout = CAL_TIMEOUT;
-    while (offsetCount != 0U) {
-        uint8_t ready = 0U;
-
-        if (lsm6dsr_gy_flag_data_ready_get(&dev_ctx, &ready) != 0) return imuStatus;
-        if (ready != 0U) {
-            if (lsm6dsr_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate) != 0) return imuStatus;
-            angular_rate_mdps[0] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
-            angular_rate_mdps[1] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
-            angular_rate_mdps[2] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-
-            /* Sensor faces down: accumulate the bias in car body coordinates. */
-            gyroscopeOffset.axis.x -= angular_rate_mdps[1] / 1000.0f;
-            gyroscopeOffset.axis.y -= angular_rate_mdps[0] / 1000.0f;
-            gyroscopeOffset.axis.z -= angular_rate_mdps[2] / 1000.0f;
-            offsetCount--;
-        }
-        if (--calibrationTimeout == 0U) {
-            imuStatus = IMU660RB_STATUS_TIMEOUT;
-            return imuStatus;
-        }
-    }
-    gyroscopeOffset = FusionVectorMultiplyScalar(gyroscopeOffset,
-        1.0f / (float) OFFSET_CAL_TIME);
-
+    /* Use a free-running CPU-clock timer to measure each real update interval. */
+    SysTick->LOAD = 0x00FFFFFFU;
+    SysTick->VAL = 0U;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+    lastTick = SysTick->VAL;
     imuStatus = IMU660RB_STATUS_OK;
     imuStage = 0U;
     return imuStatus;
@@ -161,6 +135,8 @@ uint8_t IMU660RB_GetStage(void)
 
 IMU660RB_Status Read_IMU660RB(void)
 {
+    uint32_t currentTick;
+    uint32_t elapsedTicks;
     if (imuStatus != IMU660RB_STATUS_OK) return imuStatus;
     if (lsm6dsr_acceleration_raw_get(&dev_ctx, data_raw_acceleration) != 0) return imuStatus;
     acceleration_mg[0] = lsm6dsr_from_fs2g_to_mg(data_raw_acceleration[0]);
@@ -180,7 +156,12 @@ IMU660RB_Status Read_IMU660RB(void)
                                 -angular_rate_mdps[0] / 1000.0f,
                                 -angular_rate_mdps[2] / 1000.0f}};
 
-    /* Use the LSM6DSR's configured 52 Hz period, as in the reference project. */
+    currentTick = SysTick->VAL;
+    elapsedTicks = (lastTick - currentTick) & 0x00FFFFFFU;
+    lastTick = currentTick;
+    samplePeriod = (float) elapsedTicks / (float) CPUCLK_FREQ;
+    if ((samplePeriod < 0.001f) || (samplePeriod > 0.2f)) samplePeriod = 1.0f / sampleRate;
+
     gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
     gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
