@@ -138,7 +138,7 @@ PWM2.PWM_CHANNEL_1.dutyCycle = 0;
 
 I2C1.$name                     = "IMU_I2C";
 I2C1.basicEnableController     = true;
-I2C1.basicControllerBusSpeed   = 100000;
+I2C1.basicControllerBusSpeed   = 400000;
 I2C1.peripheral.sclPin.$assign = "PA29";
 I2C1.peripheral.sdaPin.$assign = "PA30";
 
