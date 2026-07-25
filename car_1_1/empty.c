@@ -23,6 +23,7 @@ void GROUP1_IRQHandler(void)
 int main(void)
 {
     SYSCFG_DL_init();
+    NVIC_EnableIRQ(IMU_INT1_INT_IRQN);
     Motor_Init();
     Gray_Init();
     Key_Init();
