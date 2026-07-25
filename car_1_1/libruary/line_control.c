@@ -1,15 +1,16 @@
 #include "line_control.h"
 
-#define LINE_BASE_DUTY       (20)
+#define LINE_BASE_DUTY       (15)
 #define LINE_ALL_BLACK_DUTY  (12)
 #define LINE_HARD_INNER_DUTY (2)
 #define LINE_HARD_OUTER_DUTY (32)
 #define LINE_MAX_CORRECTION  (10)
 #define LINE_P_GAIN          (0.75f)
 #define LINE_D_GAIN          (0.90f)
-#define LINE_HARD_POSITION   (9)
 #define LINE_TURN_STOP_SAMPLES (13U)
 #define LINE_CENTER_MASK      (0x00F0U)
+#define LINE_LEFT_OUTER_MASK  (0x0007U)
+#define LINE_RIGHT_OUTER_MASK (0x0E00U)
 
 static int16_t previousPosition;
 static LineControl_Mode turnMode;
@@ -88,7 +89,9 @@ LineControl_Output LineControl_Update(Gray_Result gray)
         return output;
     }
 
-    if (gray.position <= -LINE_HARD_POSITION) {
+    /* One hit on the outer three sensors is enough to prepare a right angle.
+     * Do not wait until the line has already reached only S1/S2 or S11/S12. */
+    if ((gray.raw & LINE_LEFT_OUTER_MASK) != 0U) {
         previousPosition = gray.position;
         turnMode = LINE_CONTROL_TURN_STOP;
         turnStopSamples = LINE_TURN_STOP_SAMPLES;
@@ -98,7 +101,7 @@ LineControl_Output LineControl_Update(Gray_Result gray)
         output.mode = LINE_CONTROL_TURN_STOP;
         return output;
     }
-    if (gray.position >= LINE_HARD_POSITION) {
+    if ((gray.raw & LINE_RIGHT_OUTER_MASK) != 0U) {
         previousPosition = gray.position;
         turnMode = LINE_CONTROL_TURN_STOP;
         turnStopSamples = LINE_TURN_STOP_SAMPLES;
