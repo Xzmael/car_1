@@ -57,14 +57,20 @@ void Motor_Init(void)
 
 void Motor_SetForward(uint8_t duty)
 {
-    if (duty > MOTOR_MAX_DUTY) duty = MOTOR_MAX_DUTY;
+    Motor_SetForwardDuty(duty, duty);
+}
+
+void Motor_SetForwardDuty(uint8_t leftDuty, uint8_t rightDuty)
+{
+    if (leftDuty > MOTOR_MAX_DUTY) leftDuty = MOTOR_MAX_DUTY;
+    if (rightDuty > MOTOR_MAX_DUTY) rightDuty = MOTOR_MAX_DUTY;
     /* Motor wiring requires IN1 low and IN2 high for vehicle-forward motion. */
     DL_GPIO_clearPins(MOTOR_DIR_AIN1_PORT, MOTOR_DIR_AIN1_PIN);
     DL_GPIO_setPins(MOTOR_DIR_AIN2_PORT, MOTOR_DIR_AIN2_PIN);
     DL_GPIO_clearPins(MOTOR_DIR_BIN1_PORT, MOTOR_DIR_BIN1_PIN);
     DL_GPIO_setPins(MOTOR_DIR_BIN2_PORT, MOTOR_DIR_BIN2_PIN);
-    Motor_SetDuty(duty, duty);
-    motorStatus.running = (duty != 0U);
+    Motor_SetDuty(leftDuty, rightDuty);
+    motorStatus.running = (leftDuty != 0U) || (rightDuty != 0U);
 }
 
 void Motor_Stop(void)
