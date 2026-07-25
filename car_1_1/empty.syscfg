@@ -16,6 +16,7 @@ const GPIO3  = GPIO.addInstance();
 const GPIO4  = GPIO.addInstance();
 const GPIO5  = GPIO.addInstance();
 const GPIO7  = GPIO.addInstance();
+const GPIO8  = GPIO.addInstance();
 const I2C    = scripting.addModule("/ti/driverlib/I2C", {}, false);
 const I2C1   = I2C.addInstance();
 const PWM    = scripting.addModule("/ti/driverlib/PWM", {}, false);
@@ -138,9 +139,17 @@ PWM2.PWM_CHANNEL_1.dutyCycle = 0;
 
 I2C1.$name                     = "IMU_I2C";
 I2C1.basicEnableController     = true;
-I2C1.basicControllerBusSpeed   = 100000;
+I2C1.basicControllerBusSpeed   = 400000;
 I2C1.peripheral.sclPin.$assign = "PA29";
 I2C1.peripheral.sdaPin.$assign = "PA30";
+
+GPIO8.$name                           = "IMU_INT1";
+GPIO8.associatedPins[0].$name         = "INT1";
+GPIO8.associatedPins[0].direction     = "INPUT";
+GPIO8.associatedPins[0].interruptEn   = true;
+GPIO8.associatedPins[0].interruptPriority = "3";
+GPIO8.associatedPins[0].polarity      = "RISE";
+GPIO8.associatedPins[0].pin.$assign   = "PB18";
 
 SYSCTL.forceDefaultClkConfig = true;
 

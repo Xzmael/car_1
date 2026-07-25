@@ -33,6 +33,7 @@ static uint8_t imuStage;
 static float samplePeriod, sampleRate;
 static uint32_t lastTick;
 static IMU660RB_Status imuStatus = IMU660RB_STATUS_I2C_ERROR;
+static volatile bool dataReady;
 
 static FusionMatrix gyroscopeMisalignment = {{{1.0f, 0.0f, 0.0f},
                                                 {0.0f, 1.0f, 0.0f},
@@ -54,11 +55,15 @@ IMU660RB_Status IMU660RB_Init(void)
 {
     int8_t freq_fine;
     uint32_t calibrationTimeout;
+    uint8_t offsetCount;
 
     /* Initialize mems driver interface */
     dev_ctx.write_reg = platform_write;
     dev_ctx.read_reg = platform_read;
     dev_ctx.mdelay = platform_delay;
+    imuStatus = IMU660RB_STATUS_I2C_ERROR;
+    dataReady = false;
+    gyroscopeOffset = (FusionVector) {{0.0f, 0.0f, 0.0f}};
 
     /* Wait sensor boot time */
     platform_delay(BOOT_TIME);
@@ -100,13 +105,49 @@ IMU660RB_Status IMU660RB_Init(void)
         (lsm6dsr_gy_full_scale_set(&dev_ctx, LSM6DSR_2000dps) != 0) ||
         (lsm6dsr_gy_filter_lp1_set(&dev_ctx, 1) != 0)) return imuStatus;
 
-    imuStage = 7U;
+    {
+        lsm6dsr_pin_int1_route_t int1Route;
+        imuStage = 7U;
+        if (lsm6dsr_pin_int1_route_get(&dev_ctx, &int1Route) != 0) return imuStatus;
+        int1Route.int1_ctrl.int1_drdy_g = PROPERTY_ENABLE;
+        if (lsm6dsr_pin_int1_route_set(&dev_ctx, &int1Route) != 0) return imuStatus;
+        if (lsm6dsr_data_ready_mode_set(&dev_ctx, LSM6DSR_DRDY_PULSED) != 0) return imuStatus;
+    }
+
+    imuStage = 8U;
     if (lsm6dsr_odr_cal_reg_get(&dev_ctx, &freq_fine) != 0) return imuStatus;
     sampleRate = (6667 + ((0.0015 * freq_fine) * 6667)) / ODR_COEFF_52Hz;
     samplePeriod = 1.0 / sampleRate;
 
     FusionAhrsInitialise(&ahrs);
     FusionOffsetInitialise(&offset, sampleRate);
+
+    /* Reference algorithm: average 50 stationary gyro samples at startup. */
+    platform_delay(200U);
+    imuStage = 9U;
+    offsetCount = OFFSET_CAL_TIME;
+    calibrationTimeout = CAL_TIMEOUT;
+    while (offsetCount != 0U) {
+        uint8_t ready = 0U;
+
+        if (lsm6dsr_gy_flag_data_ready_get(&dev_ctx, &ready) != 0) return imuStatus;
+        if (ready != 0U) {
+            if (lsm6dsr_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate) != 0) return imuStatus;
+            angular_rate_mdps[0] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
+            angular_rate_mdps[1] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
+            angular_rate_mdps[2] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
+            gyroscopeOffset.axis.x -= angular_rate_mdps[1] / 1000.0f;
+            gyroscopeOffset.axis.y -= angular_rate_mdps[0] / 1000.0f;
+            gyroscopeOffset.axis.z -= angular_rate_mdps[2] / 1000.0f;
+            offsetCount--;
+        }
+        if (--calibrationTimeout == 0U) {
+            imuStatus = IMU660RB_STATUS_TIMEOUT;
+            return imuStatus;
+        }
+    }
+    gyroscopeOffset = FusionVectorMultiplyScalar(gyroscopeOffset,
+        1.0f / (float) OFFSET_CAL_TIME);
 
     /* Use a free-running CPU-clock timer to measure each real update interval. */
     SysTick->LOAD = 0x00FFFFFFU;
@@ -168,6 +209,18 @@ IMU660RB_Status Read_IMU660RB(void)
     FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
     euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
     return imuStatus;
+}
+
+void IMU660RB_DataReadyNotify(void)
+{
+    dataReady = true;
+}
+
+bool IMU660RB_HasNewData(void)
+{
+    if (!dataReady) return false;
+    dataReady = false;
+    return true;
 }
 
 static bool i2c_wait_idle(void)

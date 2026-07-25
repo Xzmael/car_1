@@ -145,15 +145,21 @@ void Task1_Start(void)
 
 void Task1_Update(void)
 {
-    const IMU660RB_Status status = Read_IMU660RB();
+    IMU660RB_Status status = IMU660RB_STATUS_OK;
 
     Gray_Read();
-    if (status != IMU660RB_STATUS_OK) {
-        Motor_Stop();
-        Task1_ClearAlarm();
-        taskFaulted = true;
-        Task1_ShowFault(status);
-        return;
+    if (IMU660RB_HasNewData()) {
+        status = Read_IMU660RB();
+        if (status != IMU660RB_STATUS_OK) {
+            Motor_Stop();
+            Task1_ClearAlarm();
+            taskFaulted = true;
+            Task1_ShowFault(status);
+            return;
+        }
+        if (!lineStopped) {
+            Motor_HoldYawUpdate(euler.angle.yaw);
+        }
     }
     if (!lineStopped && Task1_GrayStopDetected()) {
         lineStopped = true;
@@ -162,9 +168,7 @@ void Task1_Update(void)
         Task1_ShowStatus();
         displayDivider = 0U;
     }
-    if (!lineStopped) {
-        Motor_HoldYawUpdate(euler.angle.yaw);
-    } else {
+    if (lineStopped) {
         Task1_UpdateAlarm();
     }
     if (++displayDivider >= 4U) {

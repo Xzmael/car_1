@@ -21,5 +21,7 @@ IMU660RB_Status IMU660RB_GetStatus(void);
 uint8_t IMU660RB_GetDeviceId(void);
 uint8_t IMU660RB_GetStage(void);
 IMU660RB_Status Read_IMU660RB(void);
+void IMU660RB_DataReadyNotify(void);
+bool IMU660RB_HasNewData(void);
 
 #endif  /* #ifndef _IMU660RB_H_ */
