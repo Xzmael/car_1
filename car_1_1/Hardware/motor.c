@@ -119,8 +119,9 @@ void Motor_HoldYawUpdate(float yaw)
     }
     if (correction > MOTOR_MAX_DIFFERENTIAL) correction = MOTOR_MAX_DIFFERENTIAL;
     else if (correction < -MOTOR_MAX_DIFFERENTIAL) correction = -MOTOR_MAX_DIFFERENTIAL;
-    Motor_SetDuty(Motor_ClampDuty((float) motorBaseDuty + correction),
-        Motor_ClampDuty((float) motorBaseDuty - correction));
+    /* Vehicle yaw convention is opposite the motor-side duty convention. */
+    Motor_SetDuty(Motor_ClampDuty((float) motorBaseDuty - correction),
+        Motor_ClampDuty((float) motorBaseDuty + correction));
 }
 
 Motor_Status Motor_GetStatus(void)
