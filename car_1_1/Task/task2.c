@@ -7,14 +7,15 @@
 #include "oled.h"
 #include "IMU660RB/imu660rb.h"
 #include "line_control.h"
-#include "ti_msp_dl_config.h"
 
 #define TASK2_DISPLAY_SAMPLES (26U)
-#define TASK_START_DELAY_CYCLES (128000000U)
+#define TASK_START_DELAY_SAMPLES (208U)
 
 static bool taskFaulted;
 static uint8_t displayDivider;
 static LineControl_Output lineOutput;
+static bool motorStarted;
+static uint16_t startDelaySamples;
 
 static void Task2_Refresh(void)
 {
@@ -33,16 +34,6 @@ static void Task2_ShowFault(IMU660RB_Status status)
     Task2_Refresh();
 }
 
-static void Task2_ShowStarting(void)
-{
-    OLED_Clear();
-    OLED_SetCursor(0U, 16U);
-    OLED_WriteString("START IN 4S");
-    OLED_SetCursor(0U, 40U);
-    OLED_WriteString("MOTOR STOP");
-    Task2_Refresh();
-}
-
 static void Task2_ShowStatus(void)
 {
     const Gray_Result gray = Gray_GetResult();
@@ -53,7 +44,8 @@ static void Task2_ShowStatus(void)
     OLED_WriteString("Y:");
     OLED_WriteFloat2(euler.angle.yaw);
     OLED_SetCursor(0U, 16U);
-    if (lineOutput.mode == LINE_CONTROL_LOST) OLED_WriteString("LOST");
+    if (!motorStarted) OLED_WriteString("WAIT");
+    else if (lineOutput.mode == LINE_CONTROL_LOST) OLED_WriteString("LOST");
     else if (lineOutput.mode == LINE_CONTROL_ALL_BLACK) OLED_WriteString("ALL");
     else if (lineOutput.mode == LINE_CONTROL_HARD_LEFT) OLED_WriteString("HARD L");
     else if (lineOutput.mode == LINE_CONTROL_HARD_RIGHT) OLED_WriteString("HARD R");
@@ -83,17 +75,15 @@ void Task2_Start(void)
     lineOutput.rightDuty = 0U;
     lineOutput.position = 0;
     lineOutput.mode = LINE_CONTROL_LOST;
+    motorStarted = false;
+    startDelaySamples = TASK_START_DELAY_SAMPLES;
     if (status != IMU660RB_STATUS_OK) {
         taskFaulted = true;
         Task2_ShowFault(status);
         return;
     }
-    /* Keep the vehicle stationary for placement after every task start. */
-    Task2_ShowStarting();
-    delay_cycles(TASK_START_DELAY_CYCLES);
     Gray_Read();
     lineOutput = LineControl_Update(Gray_GetResult());
-    Motor_SetForwardDuty(lineOutput.leftDuty, lineOutput.rightDuty);
     Task2_ShowStatus();
 }
 
@@ -104,7 +94,6 @@ void Task2_Update(void)
 
     Gray_Read();
     lineOutput = LineControl_Update(Gray_GetResult());
-    Motor_SetForwardDuty(lineOutput.leftDuty, lineOutput.rightDuty);
     if (IMU660RB_HasNewData()) {
         imuUpdated = true;
         status = Read_IMU660RB();
@@ -114,6 +103,14 @@ void Task2_Update(void)
             Task2_ShowFault(status);
             return;
         }
+        if (!motorStarted && --startDelaySamples == 0U) {
+            motorStarted = true;
+        }
+    }
+    if (motorStarted) {
+        Motor_SetForwardDuty(lineOutput.leftDuty, lineOutput.rightDuty);
+    } else {
+        Motor_Stop();
     }
     if (imuUpdated && (++displayDivider >= TASK2_DISPLAY_SAMPLES)) {
         displayDivider = 0U;
