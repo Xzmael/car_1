@@ -47,6 +47,7 @@ static void Task2_ShowStatus(void)
     if (!motorStarted) OLED_WriteString("WAIT");
     else if (lineOutput.mode == LINE_CONTROL_LOST) OLED_WriteString("LOST");
     else if (lineOutput.mode == LINE_CONTROL_ALL_BLACK) OLED_WriteString("ALL");
+    else if (lineOutput.mode == LINE_CONTROL_TURN_STOP) OLED_WriteString("TURN STOP");
     else if (lineOutput.mode == LINE_CONTROL_HARD_LEFT) OLED_WriteString("HARD L");
     else if (lineOutput.mode == LINE_CONTROL_HARD_RIGHT) OLED_WriteString("HARD R");
     else OLED_WriteString("LINE");
@@ -83,7 +84,6 @@ void Task2_Start(void)
         return;
     }
     Gray_Read();
-    lineOutput = LineControl_Update(Gray_GetResult());
     Task2_ShowStatus();
 }
 
@@ -93,7 +93,6 @@ void Task2_Update(void)
     bool imuUpdated = false;
 
     Gray_Read();
-    lineOutput = LineControl_Update(Gray_GetResult());
     if (IMU660RB_HasNewData()) {
         imuUpdated = true;
         status = Read_IMU660RB();
@@ -106,6 +105,8 @@ void Task2_Update(void)
         if (!motorStarted && --startDelaySamples == 0U) {
             motorStarted = true;
         }
+        /* Use the IMU's 52 Hz data-ready event as the line-control period. */
+        lineOutput = LineControl_Update(Gray_GetResult());
     }
     if (motorStarted) {
         Motor_SetForwardDuty(lineOutput.leftDuty, lineOutput.rightDuty);
