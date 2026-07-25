@@ -1,5 +1,7 @@
 #include "line_control.h"
 
+#include "motor.h"
+
 #define LINE_BASE_DUTY       (15)
 #define LINE_ALL_BLACK_DUTY  (12)
 #define LINE_HARD_OUTER_DUTY (12)
@@ -15,6 +17,7 @@ static int16_t previousPosition;
 static LineControl_Mode turnMode;
 static uint8_t turnForwardSamples;
 static uint8_t centerSamples;
+static bool lineControlRunning;
 
 static uint8_t LineControl_ClampDuty(int16_t duty)
 {
@@ -29,6 +32,7 @@ void LineControl_Init(void)
     turnMode = LINE_CONTROL_TRACKING;
     turnForwardSamples = 0U;
     centerSamples = 0U;
+    lineControlRunning = false;
 }
 
 LineControl_Output LineControl_Update(Gray_Result gray)
@@ -120,4 +124,26 @@ LineControl_Output LineControl_Update(Gray_Result gray)
     output.mode = LINE_CONTROL_TRACKING;
     previousPosition = gray.position;
     return output;
+}
+
+void LineControl_Start(void)
+{
+    LineControl_Init();
+    lineControlRunning = true;
+}
+
+void LineControl_Run(void)
+{
+    LineControl_Output output;
+
+    if (!lineControlRunning) return;
+    Gray_Read();
+    output = LineControl_Update(Gray_GetResult());
+    Motor_SetForwardDuty(output.leftDuty, output.rightDuty);
+}
+
+void LineControl_Stop(void)
+{
+    lineControlRunning = false;
+    Motor_Stop();
 }

@@ -23,5 +23,8 @@ typedef struct {
 
 void LineControl_Init(void);
 LineControl_Output LineControl_Update(Gray_Result gray);
+void LineControl_Start(void);
+void LineControl_Run(void);
+void LineControl_Stop(void);
 
 #endif
