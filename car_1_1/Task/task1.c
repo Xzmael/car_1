@@ -9,6 +9,7 @@
 #include "motor.h"
 #include "oled.h"
 #include "IMU660RB/imu660rb.h"
+#include "ti_msp_dl_config.h"
 
 #define TASK1_DUTY (20U)
 #define TASK1_LED_FLASH_TICKS (160U)
@@ -16,6 +17,7 @@
 #define TASK1_GRAY_STARTUP_TICKS (20U)
 #define TASK1_BLACK_SAMPLES_TO_STOP (2U)
 #define TASK1_DISPLAY_SAMPLES (26U)
+#define TASK_START_DELAY_CYCLES (128000000U)
 
 static uint8_t displayDivider;
 static bool lineStopped;
@@ -99,6 +101,16 @@ static void Task1_ShowFault(IMU660RB_Status status)
     Task1_Refresh();
 }
 
+static void Task1_ShowStarting(void)
+{
+    OLED_Clear();
+    OLED_SetCursor(0U, 16U);
+    OLED_WriteString("START IN 4S");
+    OLED_SetCursor(0U, 40U);
+    OLED_WriteString("MOTOR STOP");
+    Task1_Refresh();
+}
+
 static void Task1_ShowStatus(void)
 {
     const Motor_Status motor = Motor_GetStatus();
@@ -140,6 +152,9 @@ void Task1_Start(void)
         return;
     }
 
+    /* Keep the vehicle stationary for placement after every task start. */
+    Task1_ShowStarting();
+    delay_cycles(TASK_START_DELAY_CYCLES);
     Motor_HoldYawStart(TASK1_DUTY);
     Task1_ShowStatus();
 }

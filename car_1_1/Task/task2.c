@@ -7,8 +7,10 @@
 #include "oled.h"
 #include "IMU660RB/imu660rb.h"
 #include "line_control.h"
+#include "ti_msp_dl_config.h"
 
 #define TASK2_DISPLAY_SAMPLES (26U)
+#define TASK_START_DELAY_CYCLES (128000000U)
 
 static bool taskFaulted;
 static uint8_t displayDivider;
@@ -28,6 +30,16 @@ static void Task2_ShowFault(IMU660RB_Status status)
     OLED_WriteString((status == IMU660RB_STATUS_TIMEOUT) ? "TIMEOUT" : "IMU ERR");
     OLED_SetCursor(0U, 40U);
     OLED_WriteString("SW4: MENU");
+    Task2_Refresh();
+}
+
+static void Task2_ShowStarting(void)
+{
+    OLED_Clear();
+    OLED_SetCursor(0U, 16U);
+    OLED_WriteString("START IN 4S");
+    OLED_SetCursor(0U, 40U);
+    OLED_WriteString("MOTOR STOP");
     Task2_Refresh();
 }
 
@@ -76,6 +88,9 @@ void Task2_Start(void)
         Task2_ShowFault(status);
         return;
     }
+    /* Keep the vehicle stationary for placement after every task start. */
+    Task2_ShowStarting();
+    delay_cycles(TASK_START_DELAY_CYCLES);
     Gray_Read();
     lineOutput = LineControl_Update(Gray_GetResult());
     Motor_SetForwardDuty(lineOutput.leftDuty, lineOutput.rightDuty);
