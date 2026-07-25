@@ -7,7 +7,7 @@
 #define MOTOR_MAX_DUTY         (100U)
 #define MOTOR_MAX_DIFFERENTIAL (3.0f)
 #define MOTOR_YAW_P_GAIN       (0.45f)
-#define MOTOR_YAW_DEADBAND     (4.0f)
+#define MOTOR_YAW_DEADBAND     (2.0f)
 #define MOTOR_YAW_JUMP_LIMIT   (15.0f)
 
 static Motor_Status motorStatus;
@@ -105,6 +105,8 @@ void Motor_HoldYawUpdate(float yaw)
     /* Ignore one implausible IMU frame without changing the locked heading. */
     if (Motor_NormalizeAngle(yaw - motorLastYaw) > MOTOR_YAW_JUMP_LIMIT ||
         Motor_NormalizeAngle(yaw - motorLastYaw) < -MOTOR_YAW_JUMP_LIMIT) {
+        /* Accept the new reference so one jump cannot freeze later updates. */
+        motorLastYaw = yaw;
         return;
     }
     motorLastYaw = yaw;
