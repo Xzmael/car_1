@@ -15,6 +15,7 @@
 #define TASK1_BUZZER_TICKS (60U)
 #define TASK1_GRAY_STARTUP_TICKS (20U)
 #define TASK1_BLACK_SAMPLES_TO_STOP (2U)
+#define TASK1_DISPLAY_SAMPLES (26U)
 
 static uint8_t displayDivider;
 static bool lineStopped;
@@ -146,9 +147,11 @@ void Task1_Start(void)
 void Task1_Update(void)
 {
     IMU660RB_Status status = IMU660RB_STATUS_OK;
+    bool imuUpdated = false;
 
     Gray_Read();
     if (IMU660RB_HasNewData()) {
+        imuUpdated = true;
         status = Read_IMU660RB();
         if (status != IMU660RB_STATUS_OK) {
             Motor_Stop();
@@ -171,7 +174,8 @@ void Task1_Update(void)
     if (lineStopped) {
         Task1_UpdateAlarm();
     }
-    if (++displayDivider >= 4U) {
+    /* Full OLED refresh is slow; only refresh after roughly half a second of IMU frames. */
+    if (imuUpdated && (++displayDivider >= TASK1_DISPLAY_SAMPLES)) {
         displayDivider = 0U;
         Task1_ShowStatus();
     }

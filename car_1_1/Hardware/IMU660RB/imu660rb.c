@@ -31,7 +31,6 @@ static int16_t data_raw_angular_rate[3];
 static uint8_t whoamI, rst;
 static uint8_t imuStage;
 static float samplePeriod, sampleRate;
-static uint32_t lastTick;
 static IMU660RB_Status imuStatus = IMU660RB_STATUS_I2C_ERROR;
 static volatile bool dataReady;
 
@@ -149,11 +148,6 @@ IMU660RB_Status IMU660RB_Init(void)
     gyroscopeOffset = FusionVectorMultiplyScalar(gyroscopeOffset,
         1.0f / (float) OFFSET_CAL_TIME);
 
-    /* Use a free-running CPU-clock timer to measure each real update interval. */
-    SysTick->LOAD = 0x00FFFFFFU;
-    SysTick->VAL = 0U;
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
-    lastTick = SysTick->VAL;
     imuStatus = IMU660RB_STATUS_OK;
     imuStage = 0U;
     return imuStatus;
@@ -176,8 +170,6 @@ uint8_t IMU660RB_GetStage(void)
 
 IMU660RB_Status Read_IMU660RB(void)
 {
-    uint32_t currentTick;
-    uint32_t elapsedTicks;
     if (imuStatus != IMU660RB_STATUS_OK) return imuStatus;
     if (lsm6dsr_acceleration_raw_get(&dev_ctx, data_raw_acceleration) != 0) return imuStatus;
     acceleration_mg[0] = lsm6dsr_from_fs2g_to_mg(data_raw_acceleration[0]);
@@ -197,12 +189,7 @@ IMU660RB_Status Read_IMU660RB(void)
                                 -angular_rate_mdps[0] / 1000.0f,
                                 -angular_rate_mdps[2] / 1000.0f}};
 
-    currentTick = SysTick->VAL;
-    elapsedTicks = (lastTick - currentTick) & 0x00FFFFFFU;
-    lastTick = currentTick;
-    samplePeriod = (float) elapsedTicks / (float) CPUCLK_FREQ;
-    if ((samplePeriod < 0.001f) || (samplePeriod > 0.2f)) samplePeriod = 1.0f / sampleRate;
-
+    /* INT1 delivers one notification per ODR frame, so use the sensor period. */
     gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
     gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
