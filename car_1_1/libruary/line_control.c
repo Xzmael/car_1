@@ -6,7 +6,7 @@
 #define LINE_ALL_BLACK_DUTY  (12)
 #define LINE_HARD_OUTER_DUTY (12)
 #define LINE_MAX_CORRECTION  (10)
-#define LINE_P_GAIN          (0.75f)
+#define LINE_P_GAIN          (0.9f)
 #define LINE_D_GAIN          (0.90f)
 #define LINE_TURN_FORWARD_SAMPLES (26U)
 #define LINE_CENTER_MASK          (0x0060U)

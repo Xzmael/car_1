@@ -84,9 +84,14 @@ void Motor_Stop(void)
 
 void Motor_HoldYawStart(uint8_t duty)
 {
+    Motor_HoldYawTargetStart(duty, euler.angle.yaw);
+}
+
+void Motor_HoldYawTargetStart(uint8_t duty, float targetYaw)
+{
     if (duty > MOTOR_MAX_DUTY) duty = MOTOR_MAX_DUTY;
     motorBaseDuty = duty;
-    motorStatus.targetYaw = euler.angle.yaw;
+    motorStatus.targetYaw = Motor_NormalizeAngle(targetYaw);
     motorLastYaw = euler.angle.yaw;
     motorStatus.yawError = 0.0f;
     Motor_SetForward(duty);

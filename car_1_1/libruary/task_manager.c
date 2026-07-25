@@ -6,6 +6,7 @@
 #include "key.h"
 #include "oled.h"
 #include "../Task/task1.h"
+#include "../Task/task2.h"
 
 #define TASK_COUNT (4U)
 
@@ -55,6 +56,7 @@ static void TaskManager_ShowPlaceholder(void)
 static void TaskManager_ReturnToMenu(void)
 {
     Task1_Stop();
+    Task2_Stop();
     taskState = TASK_MANAGER_MENU;
     TaskManager_ShowMenu();
 }
@@ -64,6 +66,7 @@ void TaskManager_Init(void)
     taskState = TASK_MANAGER_MENU;
     selectedTask = 1U;
     Task1_Stop();
+    Task2_Stop();
     TaskManager_ShowMenu();
 }
 
@@ -91,8 +94,12 @@ void TaskManager_Run(void)
                 if (selectedTask == 1U) {
                     Task1_Start();
                     taskState = Task1_HasFault() ? TASK_MANAGER_FAULT : TASK_MANAGER_TASK1;
+                } else if (selectedTask == 2U) {
+                    Task2_Start();
+                    taskState = Task2_HasFault() ? TASK_MANAGER_FAULT : TASK_MANAGER_TASK1;
                 } else {
                     Task1_Stop();
+                    Task2_Stop();
                     taskState = TASK_MANAGER_PLACEHOLDER;
                     TaskManager_ShowPlaceholder();
                 }
@@ -101,8 +108,13 @@ void TaskManager_Run(void)
         }
 
         if (taskState == TASK_MANAGER_TASK1) {
-            Task1_Update();
-            if (Task1_HasFault()) {
+            if (selectedTask == 1U) {
+                Task1_Update();
+            } else {
+                Task2_Update();
+            }
+            if ((selectedTask == 1U && Task1_HasFault()) ||
+                (selectedTask == 2U && Task2_HasFault())) {
                 taskState = TASK_MANAGER_FAULT;
             }
         }

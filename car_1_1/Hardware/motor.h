@@ -17,6 +17,7 @@ void Motor_SetForward(uint8_t duty);
 void Motor_SetForwardDuty(uint8_t leftDuty, uint8_t rightDuty);
 void Motor_Stop(void);
 void Motor_HoldYawStart(uint8_t duty);
+void Motor_HoldYawTargetStart(uint8_t duty, float targetYaw);
 void Motor_HoldYawUpdate(float yaw);
 Motor_Status Motor_GetStatus(void);
 
