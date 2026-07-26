@@ -120,7 +120,7 @@ IMU660RB_Status IMU660RB_Init(void)
 
     FusionAhrsInitialise(&ahrs);
     /* Average 50 stationary samples before any task starts the motors. */
-    platform_delay(200U);
+    platform_delay(500U);
     imuStage = 9U;
     offsetCount = OFFSET_CAL_TIME;
     calibrationTimeout = CAL_TIMEOUT;
