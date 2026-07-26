@@ -4,8 +4,6 @@
 #include "ti_msp_dl_config.h"
 
 #define BOOT_TIME         (10)
-#define OFFSET_CAL_TIME   (50)
-#define OFFSET_CAL_SAMPLE_MS (20U)
 #define I2C_ADDRESS        (0x6AU)
 #define I2C_TIMEOUT        (100000U)
 #define CAL_TIMEOUT        (5000000U)
@@ -40,10 +38,9 @@ static FusionMatrix gyroscopeMisalignment = {{{1.0f, 0.0f, 0.0f},
                                                 {0.0f, 1.0f, 0.0f},
                                                 {0.0f, 0.0f, 1.0f}}};
 static FusionVector gyroscopeSensitivity = {{1.0f, 1.0f, 1.0f}};
-static FusionVector gyroscopeOffset = {{0.0f, 0.0f, 0.0f}};
-
 FusionAhrs ahrs;
 FusionEuler euler;
+static FusionOffset offset;
 
 static int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
 static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len);
@@ -55,7 +52,6 @@ IMU660RB_Status IMU660RB_Init(void)
 {
     int8_t freq_fine;
     uint32_t calibrationTimeout;
-    uint8_t offsetCount;
 
     /* Initialize mems driver interface */
     dev_ctx.write_reg = platform_write;
@@ -63,7 +59,6 @@ IMU660RB_Status IMU660RB_Init(void)
     dev_ctx.mdelay = platform_delay;
     imuStatus = IMU660RB_STATUS_I2C_ERROR;
     dataReady = false;
-    gyroscopeOffset = (FusionVector) {{0.0f, 0.0f, 0.0f}};
 
     /* Wait sensor boot time */
     platform_delay(BOOT_TIME);
@@ -120,36 +115,7 @@ IMU660RB_Status IMU660RB_Init(void)
     samplePeriod = 1.0 / sampleRate;
 
     FusionAhrsInitialise(&ahrs);
-
-    /* Reference algorithm: average 50 stationary gyro samples at startup. */
-    platform_delay(200U);
-    imuStage = 9U;
-    offsetCount = OFFSET_CAL_TIME;
-    calibrationTimeout = CAL_TIMEOUT;
-    while (offsetCount != 0U) {
-        uint8_t ready = 0U;
-
-        if (lsm6dsr_gy_flag_data_ready_get(&dev_ctx, &ready) != 0) return imuStatus;
-        if (ready != 0U) {
-            if (lsm6dsr_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate) != 0) return imuStatus;
-            angular_rate_mdps[0] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
-            angular_rate_mdps[1] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
-            angular_rate_mdps[2] = lsm6dsr_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-            gyroscopeOffset.axis.x -= angular_rate_mdps[1] / 1000.0f;
-            gyroscopeOffset.axis.y -= angular_rate_mdps[0] / 1000.0f;
-            gyroscopeOffset.axis.z -= angular_rate_mdps[2] / 1000.0f;
-            offsetCount--;
-
-            /* Wait for the next 52 Hz frame; do not average one stale sample 50 times. */
-            platform_delay(OFFSET_CAL_SAMPLE_MS);
-        }
-        if (--calibrationTimeout == 0U) {
-            imuStatus = IMU660RB_STATUS_TIMEOUT;
-            return imuStatus;
-        }
-    }
-    gyroscopeOffset = FusionVectorMultiplyScalar(gyroscopeOffset,
-        1.0f / (float) OFFSET_CAL_TIME);
+    FusionOffsetInitialise(&offset, sampleRate);
 
     /* Timestamp each fusion update.  OLED writes can delay the main loop, so
      * the configured ODR alone is not a valid integration interval. */
@@ -209,9 +175,9 @@ IMU660RB_Status Read_IMU660RB(void)
         samplePeriod = 1.0f / sampleRate;
     }
 
-    gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
-    /* Do not learn another bias while the car runs: vibration and slow turns
-     * can otherwise be mistaken for a stationary sensor and corrupt yaw. */
+    gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment,
+        gyroscopeSensitivity, FUSION_VECTOR_ZERO);
+    gyroscope = FusionOffsetUpdate(&offset, gyroscope);
     FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, samplePeriod);
     euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
     return imuStatus;
