@@ -5,8 +5,7 @@
 
 #define KEY_SW1 (1U << 0)
 #define KEY_SW2 (1U << 1)
-#define KEY_SW3 (1U << 2)
-#define KEY_SW4 (1U << 3)
+#define KEY_SW4 (1U << 2)
 
 void Key_Init(void);
 void Key_Scan(void);

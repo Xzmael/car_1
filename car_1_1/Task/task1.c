@@ -7,7 +7,7 @@
 #include "gray.h"
 #include "led.h"
 #include "motor.h"
-#include "oled.h"
+#include "tft.h"
 #include "IMU660RB/imu660rb.h"
 
 #define TASK1_DUTY (20U)
@@ -30,12 +30,7 @@ static bool taskFaulted;
 static bool motorStarted;
 static uint16_t startDelaySamples;
 
-static void Task1_Refresh(void)
-{
-    if (OLED_Refresh() != OLED_STATUS_OK) {
-        (void) OLED_Init();
-    }
-}
+
 
 static void Task1_ClearAlarm(void)
 {
@@ -88,18 +83,18 @@ static bool Task1_GrayStopDetected(void)
 
 static void Task1_ShowFault(IMU660RB_Status status)
 {
-    OLED_Clear();
-    OLED_SetCursor(0U, 16U);
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 16U);
     if (status == IMU660RB_STATUS_DEVICE_ID_ERROR) {
-        OLED_WriteString("ID ERR");
+        TFT_WriteString("ID ERR");
     } else if (status == IMU660RB_STATUS_TIMEOUT) {
-        OLED_WriteString("TIMEOUT");
+        TFT_WriteString("TIMEOUT");
     } else {
-        OLED_WriteString("IMU ERR");
+        TFT_WriteString("IMU ERR");
     }
-    OLED_SetCursor(0U, 40U);
-    OLED_WriteString("SW4: MENU");
-    Task1_Refresh();
+    TFT_SetCursor(0U, 40U);
+    TFT_WriteString("SW4: MENU");
+
 }
 
 static void Task1_ShowStatus(void)
@@ -107,23 +102,23 @@ static void Task1_ShowStatus(void)
     const Motor_Status motor = Motor_GetStatus();
     const Gray_Result gray = Gray_GetResult();
 
-    OLED_Clear();
-    OLED_SetCursor(0U, 0U);
-    OLED_WriteString("Y:");
-    OLED_WriteFloat2(euler.angle.yaw);
-    OLED_SetCursor(0U, 16U);
-    OLED_WriteString("L:");
-    OLED_WriteUInt(motor.leftDuty);
-    OLED_WriteString(" R:");
-    OLED_WriteUInt(motor.rightDuty);
-    OLED_SetCursor(0U, 32U);
-    OLED_WriteString("RAW:");
-    OLED_WriteUInt(gray.raw);
-    OLED_SetCursor(0U, 48U);
-    OLED_WriteString(lineStopped ? "STOP N:" :
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 0U);
+    TFT_WriteString("Y:");
+    TFT_WriteFloat2(euler.angle.yaw);
+    TFT_SetCursor(0U, 16U);
+    TFT_WriteString("L:");
+    TFT_WriteUInt(motor.leftDuty);
+    TFT_WriteString(" R:");
+    TFT_WriteUInt(motor.rightDuty);
+    TFT_SetCursor(0U, 32U);
+    TFT_WriteString("RAW:");
+    TFT_WriteUInt(gray.raw);
+    TFT_SetCursor(0U, 48U);
+    TFT_WriteString(lineStopped ? "STOP N:" :
                      (motorStarted ? "GO N:" : "WAIT N:"));
-    OLED_WriteUInt(gray.blackCount);
-    Task1_Refresh();
+    TFT_WriteUInt(gray.blackCount);
+
 }
 
 void Task1_Start(void)
@@ -184,7 +179,7 @@ void Task1_Update(void)
     if (lineStopped) {
         Task1_UpdateAlarm();
     }
-    /* Full OLED refresh is slow; only refresh after roughly half a second of IMU frames. */
+    /* Limit full-screen TFT updates while IMU control remains at full rate. */
     if (imuUpdated && (++displayDivider >= TASK1_DISPLAY_SAMPLES)) {
         displayDivider = 0U;
         Task1_ShowStatus();

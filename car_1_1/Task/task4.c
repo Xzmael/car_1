@@ -5,31 +5,26 @@
 #include "buzzer.h"
 #include "led.h"
 #include "motor.h"
-#include "oled.h"
+#include "tft.h"
 #include "vision_uart.h"
 
 static bool visionDetected;
 
-static void Task4_Refresh(void)
-{
-    if (OLED_Refresh() != OLED_STATUS_OK) {
-        (void) OLED_Init();
-    }
-}
+
 
 static void Task4_ShowStatus(void)
 {
-    OLED_Clear();
-    OLED_SetCursor(0U, 8U);
-    OLED_WriteString(visionDetected ? "VISION OK" : "VISION WAIT");
-    OLED_SetCursor(0U, 32U);
-    OLED_WriteString("B:");
-    OLED_WriteUInt(VisionUart_GetByteCount());
-    OLED_WriteString(" F:");
-    OLED_WriteUInt(VisionUart_GetFrameCount());
-    OLED_SetCursor(0U, 52U);
-    OLED_WriteString("SW4: MENU");
-    Task4_Refresh();
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 8U);
+    TFT_WriteString(visionDetected ? "VISION OK" : "VISION WAIT");
+    TFT_SetCursor(0U, 32U);
+    TFT_WriteString("B:");
+    TFT_WriteUInt(VisionUart_GetByteCount());
+    TFT_WriteString(" F:");
+    TFT_WriteUInt(VisionUart_GetFrameCount());
+    TFT_SetCursor(0U, 52U);
+    TFT_WriteString("SW4: MENU");
+
 }
 
 void Task4_Start(void)

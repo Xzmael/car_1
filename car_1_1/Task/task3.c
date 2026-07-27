@@ -4,7 +4,7 @@
 
 #include "gray.h"
 #include "motor.h"
-#include "oled.h"
+#include "tft.h"
 #include "IMU660RB/imu660rb.h"
 #include "line_control.h"
 
@@ -16,21 +16,16 @@ static bool motorStarted;
 static uint16_t startDelaySamples;
 static uint8_t displayDivider;
 
-static void Task3_Refresh(void)
-{
-    if (OLED_Refresh() != OLED_STATUS_OK) {
-        (void) OLED_Init();
-    }
-}
+
 
 static void Task3_ShowFault(IMU660RB_Status status)
 {
-    OLED_Clear();
-    OLED_SetCursor(0U, 16U);
-    OLED_WriteString((status == IMU660RB_STATUS_TIMEOUT) ? "TIMEOUT" : "IMU ERR");
-    OLED_SetCursor(0U, 40U);
-    OLED_WriteString("SW4: MENU");
-    Task3_Refresh();
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 16U);
+    TFT_WriteString((status == IMU660RB_STATUS_TIMEOUT) ? "TIMEOUT" : "IMU ERR");
+    TFT_SetCursor(0U, 40U);
+    TFT_WriteString("SW4: MENU");
+
 }
 
 static void Task3_ShowStatus(void)
@@ -38,24 +33,24 @@ static void Task3_ShowStatus(void)
     const Gray_Result gray = Gray_GetResult();
     const Motor_Status motor = Motor_GetStatus();
 
-    OLED_Clear();
-    OLED_SetCursor(0U, 0U);
-    OLED_WriteString("Y:");
-    OLED_WriteFloat2(euler.angle.yaw);
-    OLED_SetCursor(0U, 16U);
-    OLED_WriteString(motorStarted ?
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 0U);
+    TFT_WriteString("Y:");
+    TFT_WriteFloat2(euler.angle.yaw);
+    TFT_SetCursor(0U, 16U);
+    TFT_WriteString(motorStarted ?
         ((gray.status == GRAY_STATUS_LOST) ? "LOST GO" : "LINE") : "WAIT");
-    OLED_SetCursor(0U, 32U);
-    OLED_WriteString("P:");
-    OLED_WriteInt(gray.position);
-    OLED_WriteString(" N:");
-    OLED_WriteUInt(gray.blackCount);
-    OLED_SetCursor(0U, 48U);
-    OLED_WriteString("L:");
-    OLED_WriteUInt(motor.leftDuty);
-    OLED_WriteString(" R:");
-    OLED_WriteUInt(motor.rightDuty);
-    Task3_Refresh();
+    TFT_SetCursor(0U, 32U);
+    TFT_WriteString("P:");
+    TFT_WriteInt(gray.position);
+    TFT_WriteString(" N:");
+    TFT_WriteUInt(gray.blackCount);
+    TFT_SetCursor(0U, 48U);
+    TFT_WriteString("L:");
+    TFT_WriteUInt(motor.leftDuty);
+    TFT_WriteString(" R:");
+    TFT_WriteUInt(motor.rightDuty);
+
 }
 
 void Task3_Start(void)

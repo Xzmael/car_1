@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "key.h"
-#include "oled.h"
+#include "tft.h"
 #include "../Task/task1.h"
 #include "../Task/task2.h"
 #include "../Task/task3.h"
@@ -21,26 +21,26 @@ typedef enum {
 static TaskManager_State taskState;
 static uint8_t selectedTask;
 
-static void TaskManager_Refresh(void)
-{
-    if (OLED_Refresh() != OLED_STATUS_OK) {
-        (void) OLED_Init();
-    }
-}
+
 
 static void TaskManager_ShowMenu(void)
 {
     uint8_t task;
 
-    OLED_Clear();
-    OLED_SetCursor(0U, 0U);
-    OLED_WriteString("SELECT TASK");
+    TFT_Clear(TFT_COLOR_BLACK);
+    TFT_SetCursor(0U, 0U);
+    TFT_WriteString("SELECT TASK");
     for (task = 1U; task <= TASK_COUNT; task++) {
-        OLED_SetCursor(0U, (uint8_t) (task * 12U + 4U));
-        OLED_WriteString((task == selectedTask) ? ">T" : " T");
-        OLED_WriteUInt(task);
+        TFT_SetCursor(0U, (uint8_t) (task * 16U + 8U));
+        TFT_WriteString((task == selectedTask) ? ">T" : " T");
+        TFT_WriteUInt(task);
     }
-    TaskManager_Refresh();
+    TFT_SetCursor(0U, 88U);
+    TFT_WriteString("SW1:NEXT");
+    TFT_SetCursor(0U, 104U);
+    TFT_WriteString("SW2:RUN");
+    TFT_SetCursor(0U, 120U);
+    TFT_WriteString("SW4:EXIT");
 }
 
 static void TaskManager_ReturnToMenu(void)
@@ -79,12 +79,9 @@ void TaskManager_Run(void)
 
         if (taskState == TASK_MANAGER_MENU) {
             if ((pressed & KEY_SW1) != 0U) {
-                selectedTask = (selectedTask == 1U) ? TASK_COUNT : selectedTask - 1U;
-                TaskManager_ShowMenu();
-            } else if ((pressed & KEY_SW2) != 0U) {
                 selectedTask = (selectedTask == TASK_COUNT) ? 1U : selectedTask + 1U;
                 TaskManager_ShowMenu();
-            } else if ((pressed & KEY_SW3) != 0U) {
+            } else if ((pressed & KEY_SW2) != 0U) {
                 if (selectedTask == 1U) {
                     Task1_Start();
                     taskState = Task1_HasFault() ? TASK_MANAGER_FAULT : TASK_MANAGER_TASK1;

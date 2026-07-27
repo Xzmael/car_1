@@ -5,7 +5,7 @@
 #include "Hardware/key.h"
 #include "Hardware/led.h"
 #include "Hardware/motor.h"
-#include "Hardware/oled.h"
+#include "Hardware/tft.h"
 #include "Hardware/vision_uart.h"
 #include "libruary/task_manager.h"
 
@@ -33,9 +33,7 @@ int main(void)
     VisionUart_Init();
     delay_cycles(6400000U);
 
-    if (OLED_Init() != OLED_STATUS_OK) {
-        while (1) { Motor_Stop(); }
-    }
+    TFT_Init();
 
     TaskManager_Init();
     TaskManager_Run();

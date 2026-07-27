@@ -9,13 +9,12 @@ static uint8_t lastSample;
 static uint8_t Key_ReadRaw(void)
 {
     const uint32_t pins = DL_GPIO_readPins(GPIOB, KEY_SW1_PIN | KEY_SW2_PIN |
-        KEY_SW3_PIN | KEY_SW4_PIN);
+        KEY_SW4_PIN);
     uint8_t result = 0U;
 
     /* Keys use internal pull-ups, so a low input means pressed. */
     if ((pins & KEY_SW1_PIN) == 0U) result |= KEY_SW1;
     if ((pins & KEY_SW2_PIN) == 0U) result |= KEY_SW2;
-    if ((pins & KEY_SW3_PIN) == 0U) result |= KEY_SW3;
     if ((pins & KEY_SW4_PIN) == 0U) result |= KEY_SW4;
     return result;
 }
