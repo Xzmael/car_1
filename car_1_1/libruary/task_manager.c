@@ -8,13 +8,13 @@
 #include "../Task/task1.h"
 #include "../Task/task2.h"
 #include "../Task/task3.h"
+#include "../Task/task4.h"
 
 #define TASK_COUNT (4U)
 
 typedef enum {
     TASK_MANAGER_MENU = 0,
     TASK_MANAGER_TASK1,
-    TASK_MANAGER_PLACEHOLDER,
     TASK_MANAGER_FAULT
 } TaskManager_State;
 
@@ -43,22 +43,12 @@ static void TaskManager_ShowMenu(void)
     TaskManager_Refresh();
 }
 
-static void TaskManager_ShowPlaceholder(void)
-{
-    OLED_Clear();
-    OLED_SetCursor(0U, 16U);
-    OLED_WriteString("TASK ");
-    OLED_WriteUInt(selectedTask);
-    OLED_SetCursor(0U, 40U);
-    OLED_WriteString("NOT READY");
-    TaskManager_Refresh();
-}
-
 static void TaskManager_ReturnToMenu(void)
 {
     Task1_Stop();
     Task2_Stop();
     Task3_Stop();
+    Task4_Stop();
     taskState = TASK_MANAGER_MENU;
     TaskManager_ShowMenu();
 }
@@ -70,6 +60,7 @@ void TaskManager_Init(void)
     Task1_Stop();
     Task2_Stop();
     Task3_Stop();
+    Task4_Stop();
     TaskManager_ShowMenu();
 }
 
@@ -107,8 +98,8 @@ void TaskManager_Run(void)
                     Task1_Stop();
                     Task2_Stop();
                     Task3_Stop();
-                    taskState = TASK_MANAGER_PLACEHOLDER;
-                    TaskManager_ShowPlaceholder();
+                    Task4_Start();
+                    taskState = TASK_MANAGER_TASK1;
                 }
             }
             continue;
@@ -119,8 +110,10 @@ void TaskManager_Run(void)
                 Task1_Update();
             } else if (selectedTask == 2U) {
                 Task2_Update();
-            } else {
+            } else if (selectedTask == 3U) {
                 Task3_Update();
+            } else {
+                Task4_Update();
             }
             if ((selectedTask == 1U && Task1_HasFault()) ||
                 (selectedTask == 2U && Task2_HasFault()) ||

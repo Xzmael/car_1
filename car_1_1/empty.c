@@ -6,6 +6,7 @@
 #include "Hardware/led.h"
 #include "Hardware/motor.h"
 #include "Hardware/oled.h"
+#include "Hardware/vision_uart.h"
 #include "libruary/task_manager.h"
 
 void GROUP1_IRQHandler(void)
@@ -29,6 +30,7 @@ int main(void)
     Key_Init();
     LED_Init();
     Buzzer_Init();
+    VisionUart_Init();
     delay_cycles(6400000U);
 
     if (OLED_Init() != OLED_STATUS_OK) {
