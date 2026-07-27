@@ -8,5 +8,6 @@ void VisionUart_Init(void);
 void VisionUart_Poll(void);
 bool VisionUart_HasFrame(void);
 uint32_t VisionUart_GetFrameCount(void);
+uint32_t VisionUart_GetByteCount(void);
 
 #endif

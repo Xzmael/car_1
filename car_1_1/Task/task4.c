@@ -23,7 +23,9 @@ static void Task4_ShowStatus(void)
     OLED_SetCursor(0U, 8U);
     OLED_WriteString(visionDetected ? "VISION OK" : "VISION WAIT");
     OLED_SetCursor(0U, 32U);
-    OLED_WriteString("RX:");
+    OLED_WriteString("B:");
+    OLED_WriteUInt(VisionUart_GetByteCount());
+    OLED_WriteString(" F:");
     OLED_WriteUInt(VisionUart_GetFrameCount());
     OLED_SetCursor(0U, 52U);
     OLED_WriteString("SW4: MENU");
@@ -45,6 +47,8 @@ void Task4_Update(void)
     VisionUart_Poll();
     if (!visionDetected && VisionUart_HasFrame()) {
         visionDetected = true;
+        Task4_ShowStatus();
+    } else if (!visionDetected && VisionUart_GetByteCount() != 0U) {
         Task4_ShowStatus();
     }
 }

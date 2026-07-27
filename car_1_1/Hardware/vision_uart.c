@@ -8,6 +8,7 @@ static uint8_t lineLength;
 static bool discardingLine;
 static bool frameReady;
 static uint32_t frameCount;
+static uint32_t byteCount;
 
 void VisionUart_Init(void)
 {
@@ -15,6 +16,7 @@ void VisionUart_Init(void)
     discardingLine = false;
     frameReady = false;
     frameCount = 0U;
+    byteCount = 0U;
     while (!DL_UART_Main_isRXFIFOEmpty(VISION_UART_INST)) {
         (void) DL_UART_Main_receiveData(VISION_UART_INST);
     }
@@ -24,6 +26,7 @@ void VisionUart_Poll(void)
 {
     while (!DL_UART_Main_isRXFIFOEmpty(VISION_UART_INST)) {
         const uint8_t byte = DL_UART_Main_receiveData(VISION_UART_INST);
+        byteCount++;
 
         if (byte == '\n') {
             if (!discardingLine && lineLength != 0U) {
@@ -52,4 +55,9 @@ bool VisionUart_HasFrame(void)
 uint32_t VisionUart_GetFrameCount(void)
 {
     return frameCount;
+}
+
+uint32_t VisionUart_GetByteCount(void)
+{
+    return byteCount;
 }
