@@ -23,6 +23,7 @@ ORDERED_OBJS += \
 "./Hardware/key.o" \
 "./Hardware/led.o" \
 "./Hardware/motor.o" \
+"./Hardware/oled.o" \
 "./Hardware/tft.o" \
 "./Hardware/vision_uart.o" \
 "./Task/task1.o" \
@@ -176,8 +177,8 @@ car_1_1.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(BIN_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Hardware\IMU660RB\Fusion\FusionAhrs.o" "Hardware\IMU660RB\Fusion\FusionCompass.o" "Hardware\IMU660RB\Fusion\FusionOffset.o" "Hardware\IMU660RB\imu660rb.o" "Hardware\IMU660RB\lsm6dsr_reg.o" "Hardware\buzzer.o" "Hardware\gray.o" "Hardware\key.o" "Hardware\led.o" "Hardware\motor.o" "Hardware\tft.o" "Hardware\vision_uart.o" "Task\task1.o" "Task\task2.o" "Task\task3.o" "Task\task4.o" "libruary\line_control.o" "libruary\task_manager.o" 
-	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Hardware\IMU660RB\Fusion\FusionAhrs.d" "Hardware\IMU660RB\Fusion\FusionCompass.d" "Hardware\IMU660RB\Fusion\FusionOffset.d" "Hardware\IMU660RB\imu660rb.d" "Hardware\IMU660RB\lsm6dsr_reg.d" "Hardware\buzzer.d" "Hardware\gray.d" "Hardware\key.d" "Hardware\led.d" "Hardware\motor.d" "Hardware\tft.d" "Hardware\vision_uart.d" "Task\task1.d" "Task\task2.d" "Task\task3.d" "Task\task4.d" "libruary\line_control.d" "libruary\task_manager.d" 
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Hardware\IMU660RB\Fusion\FusionAhrs.o" "Hardware\IMU660RB\Fusion\FusionCompass.o" "Hardware\IMU660RB\Fusion\FusionOffset.o" "Hardware\IMU660RB\imu660rb.o" "Hardware\IMU660RB\lsm6dsr_reg.o" "Hardware\buzzer.o" "Hardware\gray.o" "Hardware\key.o" "Hardware\led.o" "Hardware\motor.o" "Hardware\oled.o" "Hardware\tft.o" "Hardware\vision_uart.o" "Task\task1.o" "Task\task2.o" "Task\task3.o" "Task\task4.o" "libruary\line_control.o" "libruary\task_manager.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Hardware\IMU660RB\Fusion\FusionAhrs.d" "Hardware\IMU660RB\Fusion\FusionCompass.d" "Hardware\IMU660RB\Fusion\FusionOffset.d" "Hardware\IMU660RB\imu660rb.d" "Hardware\IMU660RB\lsm6dsr_reg.d" "Hardware\buzzer.d" "Hardware\gray.d" "Hardware\key.d" "Hardware\led.d" "Hardware\motor.d" "Hardware\oled.d" "Hardware\tft.d" "Hardware\vision_uart.d" "Task\task1.d" "Task\task2.d" "Task\task3.d" "Task\task4.d" "libruary\line_control.d" "libruary\task_manager.d" 
 	-@echo ' '
 
 secondary-outputs: $(BIN_OUTPUTS)

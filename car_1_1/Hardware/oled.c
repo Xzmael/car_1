@@ -4,6 +4,9 @@
 
 #include "ti_msp_dl_config.h"
 
+/* Keep this legacy driver in Hardware without requiring its old GPIO pins. */
+#if defined(OLED_SCL_PORT) && defined(OLED_SDA_PORT)
+
 #define OLED_ADDRESS       (0x3CU)
 #define OLED_BUFFER_SIZE   ((OLED_WIDTH * OLED_HEIGHT) / 8U)
 /* Use a conservative software-I2C rate to tolerate motor and sensor noise. */
@@ -305,3 +308,5 @@ void OLED_DrawRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool on)
     OLED_DrawLine(x, y, x, (uint8_t) (y + height - 1U), on);
     OLED_DrawLine((uint8_t) (x + width - 1U), y, (uint8_t) (x + width - 1U), (uint8_t) (y + height - 1U), on);
 }
+
+#endif /* OLED_SCL_PORT && OLED_SDA_PORT */

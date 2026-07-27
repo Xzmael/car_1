@@ -11,6 +11,7 @@ C_SRCS += \
 ../Hardware/key.c \
 ../Hardware/led.c \
 ../Hardware/motor.c \
+../Hardware/oled.c \
 ../Hardware/tft.c \
 ../Hardware/vision_uart.c 
 
@@ -20,6 +21,7 @@ C_DEPS += \
 ./Hardware/key.d \
 ./Hardware/led.d \
 ./Hardware/motor.d \
+./Hardware/oled.d \
 ./Hardware/tft.d \
 ./Hardware/vision_uart.d 
 
@@ -29,6 +31,7 @@ OBJS += \
 ./Hardware/key.o \
 ./Hardware/led.o \
 ./Hardware/motor.o \
+./Hardware/oled.o \
 ./Hardware/tft.o \
 ./Hardware/vision_uart.o 
 
@@ -38,6 +41,7 @@ OBJS__QUOTED += \
 "Hardware\key.o" \
 "Hardware\led.o" \
 "Hardware\motor.o" \
+"Hardware\oled.o" \
 "Hardware\tft.o" \
 "Hardware\vision_uart.o" 
 
@@ -47,6 +51,7 @@ C_DEPS__QUOTED += \
 "Hardware\key.d" \
 "Hardware\led.d" \
 "Hardware\motor.d" \
+"Hardware\oled.d" \
 "Hardware\tft.d" \
 "Hardware\vision_uart.d" 
 
@@ -56,6 +61,7 @@ C_SRCS__QUOTED += \
 "../Hardware/key.c" \
 "../Hardware/led.c" \
 "../Hardware/motor.c" \
+"../Hardware/oled.c" \
 "../Hardware/tft.c" \
 "../Hardware/vision_uart.c" 
 
