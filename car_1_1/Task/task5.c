@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "buzzer.h"
 #include "led.h"
@@ -15,10 +16,12 @@
 #define TASK5_MAX_CORRECTION  (10)
 #define TASK5_CONFIRM_FRAMES  (2U)
 #define TASK5_FRAME_TIMEOUT_MS (300U)
+#define TASK5_DISPLAY_DIVIDER  (5U)
 
 static uint8_t detectedFrames;
 static bool tracking;
 static VisionUart_Frame target;
+static uint8_t displayDivider;
 
 static uint8_t Task5_ClampDuty(int16_t duty)
 {
@@ -27,33 +30,34 @@ static uint8_t Task5_ClampDuty(int16_t duty)
     return (uint8_t) duty;
 }
 
+static void Task5_WritePadded(const char *text)
+{
+    uint8_t length = 0U;
+
+    while ((text[length] != '\0') && (length < 16U)) length++;
+    TFT_WriteString(text);
+    while (length++ < 16U) TFT_WriteChar(' ');
+}
+
 static void Task5_ShowStatus(bool fullRefresh)
 {
     const Motor_Status motor = Motor_GetStatus();
     const int16_t center = (int16_t) (target.x + (int16_t) (target.width / 2U));
+    char text[17];
 
     if (fullRefresh) TFT_Clear(TFT_COLOR_BLACK);
-    else {
-        TFT_ClearLine(0U, TFT_COLOR_BLACK);
-        TFT_ClearLine(16U, TFT_COLOR_BLACK);
-        TFT_ClearLine(32U, TFT_COLOR_BLACK);
-        TFT_ClearLine(48U, TFT_COLOR_BLACK);
-    }
     TFT_SetCursor(0U, 0U);
-    TFT_WriteString(tracking ? "BALL RUN" : "BALL WAIT");
+    Task5_WritePadded(tracking ? "BALL RUN" : "BALL WAIT");
     TFT_SetCursor(0U, 16U);
-    TFT_WriteString("X:");
-    TFT_WriteInt(center);
-    TFT_WriteString(" E:");
-    TFT_WriteInt(center - TASK5_CENTER_X);
+    (void) snprintf(text, sizeof(text), "X:%d E:%d", center,
+        (int) (center - TASK5_CENTER_X));
+    Task5_WritePadded(text);
     TFT_SetCursor(0U, 32U);
-    TFT_WriteString("L:");
-    TFT_WriteUInt(motor.leftDuty);
-    TFT_WriteString(" R:");
-    TFT_WriteUInt(motor.rightDuty);
+    (void) snprintf(text, sizeof(text), "L:%u R:%u", motor.leftDuty, motor.rightDuty);
+    Task5_WritePadded(text);
     TFT_SetCursor(0U, 48U);
-    TFT_WriteString("F:");
-    TFT_WriteUInt(VisionUart_GetFrameCount());
+    (void) snprintf(text, sizeof(text), "F:%lu", (unsigned long) VisionUart_GetFrameCount());
+    Task5_WritePadded(text);
     TFT_SetCursor(0U, 64U);
     TFT_WriteString("SW4: MENU");
 }
@@ -84,6 +88,7 @@ void Task5_Start(void)
     target.x = 0;
     target.width = 0U;
     target.height = 0U;
+    displayDivider = 0U;
     Task5_ShowStatus(true);
 }
 
@@ -94,18 +99,26 @@ void Task5_Update(void)
 
     VisionUart_Poll();
     while (VisionUart_GetFrame(&frame)) {
-        displayChanged = true;
+        if (++displayDivider >= TASK5_DISPLAY_DIVIDER) {
+            displayDivider = 0U;
+            displayChanged = true;
+        }
         if (frame.type == VISION_FRAME_BALL) {
             target = frame;
             if (detectedFrames < TASK5_CONFIRM_FRAMES) detectedFrames++;
-            if (detectedFrames >= TASK5_CONFIRM_FRAMES) tracking = true;
+            if (detectedFrames >= TASK5_CONFIRM_FRAMES) {
+                if (!tracking) displayChanged = true;
+                tracking = true;
+            }
         } else {
+            if (tracking || (detectedFrames != 0U)) displayChanged = true;
             detectedFrames = 0U;
             tracking = false;
             Motor_Stop();
         }
     }
     if (VisionUart_GetFrameAgeMs() >= TASK5_FRAME_TIMEOUT_MS) {
+        if (tracking || (detectedFrames != 0U)) displayChanged = true;
         detectedFrames = 0U;
         tracking = false;
         Motor_Stop();
