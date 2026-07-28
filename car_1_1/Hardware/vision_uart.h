@@ -19,9 +19,11 @@ typedef struct {
 
 void VisionUart_Init(void);
 void VisionUart_Poll(void);
+void VisionUart_Tick1ms(void);
 bool VisionUart_HasFrame(void);
 bool VisionUart_GetFrame(VisionUart_Frame *frame);
 uint32_t VisionUart_GetFrameCount(void);
 uint32_t VisionUart_GetByteCount(void);
+uint32_t VisionUart_GetFrameAgeMs(void);
 
 #endif

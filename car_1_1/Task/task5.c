@@ -14,13 +14,11 @@
 #define TASK5_CENTER_DEADBAND (20)
 #define TASK5_MAX_CORRECTION  (10)
 #define TASK5_CONFIRM_FRAMES  (2U)
-#define TASK5_FRAME_TIMEOUT   (20000U)
+#define TASK5_FRAME_TIMEOUT_MS (300U)
 
 static uint8_t detectedFrames;
 static bool tracking;
 static VisionUart_Frame target;
-static uint32_t lastFrameBytes;
-static uint32_t missingFrameLoops;
 
 static uint8_t Task5_ClampDuty(int16_t duty)
 {
@@ -80,8 +78,6 @@ void Task5_Start(void)
     target.x = 0;
     target.width = 0U;
     target.height = 0U;
-    lastFrameBytes = 0U;
-    missingFrameLoops = 0U;
     Task5_ShowStatus();
 }
 
@@ -93,8 +89,6 @@ void Task5_Update(void)
     VisionUart_Poll();
     while (VisionUart_GetFrame(&frame)) {
         displayChanged = true;
-        lastFrameBytes = VisionUart_GetByteCount();
-        missingFrameLoops = 0U;
         if (frame.type == VISION_FRAME_BALL) {
             target = frame;
             if (detectedFrames < TASK5_CONFIRM_FRAMES) detectedFrames++;
@@ -105,14 +99,11 @@ void Task5_Update(void)
             Motor_Stop();
         }
     }
-    if (VisionUart_GetByteCount() == lastFrameBytes) {
-        if (missingFrameLoops < TASK5_FRAME_TIMEOUT) missingFrameLoops++;
-        if (missingFrameLoops >= TASK5_FRAME_TIMEOUT) {
-            detectedFrames = 0U;
-            tracking = false;
-            Motor_Stop();
-            displayChanged = true;
-        }
+    if (VisionUart_GetFrameAgeMs() >= TASK5_FRAME_TIMEOUT_MS) {
+        detectedFrames = 0U;
+        tracking = false;
+        Motor_Stop();
+        displayChanged = true;
     }
     if (tracking) Task5_Track();
     if (displayChanged) Task5_ShowStatus();

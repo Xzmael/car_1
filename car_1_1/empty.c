@@ -9,6 +9,11 @@
 #include "Hardware/vision_uart.h"
 #include "libruary/task_manager.h"
 
+void SysTick_Handler(void)
+{
+    VisionUart_Tick1ms();
+}
+
 void GROUP1_IRQHandler(void)
 {
     if (DL_Interrupt_getPendingGroup(DL_INTERRUPT_GROUP_1) ==
@@ -31,6 +36,7 @@ int main(void)
     LED_Init();
     Buzzer_Init();
     VisionUart_Init();
+    (void) SysTick_Config(32000U);
     delay_cycles(6400000U);
 
     TFT_Init();

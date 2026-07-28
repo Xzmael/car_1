@@ -10,6 +10,7 @@ static bool discardingLine;
 static bool frameReady;
 static uint32_t frameCount;
 static uint32_t byteCount;
+static volatile uint32_t frameAgeMs;
 static VisionUart_Frame latestFrame;
 
 static bool VisionUart_ParseUInt(const char **text, uint16_t *value)
@@ -61,6 +62,7 @@ static void VisionUart_ProcessLine(void)
         latestFrame = frame;
         frameReady = true;
         frameCount++;
+        frameAgeMs = 0U;
     }
 }
 
@@ -71,10 +73,16 @@ void VisionUart_Init(void)
     frameReady = false;
     frameCount = 0U;
     byteCount = 0U;
+    frameAgeMs = 0U;
     latestFrame.type = VISION_FRAME_NONE;
     while (!DL_UART_Main_isRXFIFOEmpty(VISION_UART_INST)) {
         (void) DL_UART_Main_receiveData(VISION_UART_INST);
     }
+}
+
+void VisionUart_Tick1ms(void)
+{
+    if (frameAgeMs != UINT32_MAX) frameAgeMs++;
 }
 
 void VisionUart_Poll(void)
@@ -120,4 +128,9 @@ uint32_t VisionUart_GetFrameCount(void)
 uint32_t VisionUart_GetByteCount(void)
 {
     return byteCount;
+}
+
+uint32_t VisionUart_GetFrameAgeMs(void)
+{
+    return frameAgeMs;
 }
