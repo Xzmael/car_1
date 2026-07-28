@@ -64,11 +64,11 @@ void Motor_SetForwardDuty(uint8_t leftDuty, uint8_t rightDuty)
 {
     if (leftDuty > MOTOR_MAX_DUTY) leftDuty = MOTOR_MAX_DUTY;
     if (rightDuty > MOTOR_MAX_DUTY) rightDuty = MOTOR_MAX_DUTY;
-    /* Motor wiring requires IN1 low and IN2 high for vehicle-forward motion. */
-    DL_GPIO_clearPins(MOTOR_DIR_AIN1_PORT, MOTOR_DIR_AIN1_PIN);
-    DL_GPIO_setPins(MOTOR_DIR_AIN2_PORT, MOTOR_DIR_AIN2_PIN);
-    DL_GPIO_clearPins(MOTOR_DIR_BIN1_PORT, MOTOR_DIR_BIN1_PIN);
-    DL_GPIO_setPins(MOTOR_DIR_BIN2_PORT, MOTOR_DIR_BIN2_PIN);
+    /* MG513X wiring reverses the previous wheel direction convention. */
+    DL_GPIO_setPins(MOTOR_DIR_AIN1_PORT, MOTOR_DIR_AIN1_PIN);
+    DL_GPIO_clearPins(MOTOR_DIR_AIN2_PORT, MOTOR_DIR_AIN2_PIN);
+    DL_GPIO_setPins(MOTOR_DIR_BIN1_PORT, MOTOR_DIR_BIN1_PIN);
+    DL_GPIO_clearPins(MOTOR_DIR_BIN2_PORT, MOTOR_DIR_BIN2_PIN);
     Motor_SetDuty(leftDuty, rightDuty);
     motorStatus.running = (leftDuty != 0U) || (rightDuty != 0U);
 }
