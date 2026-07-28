@@ -8,7 +8,7 @@
 #define LINE_MAX_CORRECTION  (18)
 #define LINE_P_GAIN          (1.50f)
 #define LINE_D_GAIN          (1.20f)
-#define LINE_TURN_FORWARD_SAMPLES (26U)
+#define LINE_TURN_FORWARD_SAMPLES (15U)
 #define LINE_CENTER_MASK          (0x0060U)
 #define LINE_LEFT_OUTER_MASK      (0x0003U)
 #define LINE_RIGHT_OUTER_MASK     (0x0C00U)
