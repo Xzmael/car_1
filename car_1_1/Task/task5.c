@@ -27,12 +27,18 @@ static uint8_t Task5_ClampDuty(int16_t duty)
     return (uint8_t) duty;
 }
 
-static void Task5_ShowStatus(void)
+static void Task5_ShowStatus(bool fullRefresh)
 {
     const Motor_Status motor = Motor_GetStatus();
     const int16_t center = (int16_t) (target.x + (int16_t) (target.width / 2U));
 
-    TFT_Clear(TFT_COLOR_BLACK);
+    if (fullRefresh) TFT_Clear(TFT_COLOR_BLACK);
+    else {
+        TFT_ClearLine(0U, TFT_COLOR_BLACK);
+        TFT_ClearLine(16U, TFT_COLOR_BLACK);
+        TFT_ClearLine(32U, TFT_COLOR_BLACK);
+        TFT_ClearLine(48U, TFT_COLOR_BLACK);
+    }
     TFT_SetCursor(0U, 0U);
     TFT_WriteString(tracking ? "BALL RUN" : "BALL WAIT");
     TFT_SetCursor(0U, 16U);
@@ -78,7 +84,7 @@ void Task5_Start(void)
     target.x = 0;
     target.width = 0U;
     target.height = 0U;
-    Task5_ShowStatus();
+    Task5_ShowStatus(true);
 }
 
 void Task5_Update(void)
@@ -106,7 +112,7 @@ void Task5_Update(void)
         displayChanged = true;
     }
     if (tracking) Task5_Track();
-    if (displayChanged) Task5_ShowStatus();
+    if (displayChanged) Task5_ShowStatus(false);
 }
 
 void Task5_Stop(void)
