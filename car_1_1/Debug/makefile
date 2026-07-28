@@ -30,6 +30,7 @@ ORDERED_OBJS += \
 "./Task/task2.o" \
 "./Task/task3.o" \
 "./Task/task4.o" \
+"./Task/task5.o" \
 "./libruary/line_control.o" \
 "./libruary/task_manager.o" \
 $(GEN_CMDS__FLAG) \

@@ -9,8 +9,9 @@
 #include "../Task/task2.h"
 #include "../Task/task3.h"
 #include "../Task/task4.h"
+#include "../Task/task5.h"
 
-#define TASK_COUNT (4U)
+#define TASK_COUNT (5U)
 
 typedef enum {
     TASK_MANAGER_MENU = 0,
@@ -49,6 +50,7 @@ static void TaskManager_ReturnToMenu(void)
     Task2_Stop();
     Task3_Stop();
     Task4_Stop();
+    Task5_Stop();
     taskState = TASK_MANAGER_MENU;
     TaskManager_ShowMenu();
 }
@@ -61,6 +63,7 @@ void TaskManager_Init(void)
     Task2_Stop();
     Task3_Stop();
     Task4_Stop();
+    Task5_Stop();
     TaskManager_ShowMenu();
 }
 
@@ -91,11 +94,18 @@ void TaskManager_Run(void)
                 } else if (selectedTask == 3U) {
                     Task3_Start();
                     taskState = Task3_HasFault() ? TASK_MANAGER_FAULT : TASK_MANAGER_TASK1;
-                } else {
+                } else if (selectedTask == 4U) {
                     Task1_Stop();
                     Task2_Stop();
                     Task3_Stop();
                     Task4_Start();
+                    taskState = TASK_MANAGER_TASK1;
+                } else {
+                    Task1_Stop();
+                    Task2_Stop();
+                    Task3_Stop();
+                    Task4_Stop();
+                    Task5_Start();
                     taskState = TASK_MANAGER_TASK1;
                 }
             }
@@ -109,8 +119,10 @@ void TaskManager_Run(void)
                 Task2_Update();
             } else if (selectedTask == 3U) {
                 Task3_Update();
-            } else {
+            } else if (selectedTask == 4U) {
                 Task4_Update();
+            } else {
+                Task5_Update();
             }
             if ((selectedTask == 1U && Task1_HasFault()) ||
                 (selectedTask == 2U && Task2_HasFault()) ||
