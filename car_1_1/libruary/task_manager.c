@@ -29,19 +29,11 @@ static void TaskManager_ShowMenu(void)
     uint8_t task;
 
     TFT_Clear(TFT_COLOR_BLACK);
-    TFT_SetCursor(0U, 0U);
-    TFT_WriteString("SELECT TASK");
     for (task = 1U; task <= TASK_COUNT; task++) {
-        TFT_SetCursor(0U, (uint8_t) (task * 16U + 8U));
+        TFT_SetCursor(0U, (uint8_t) ((task - 1U) * 24U));
         TFT_WriteString((task == selectedTask) ? ">T" : " T");
         TFT_WriteUInt(task);
     }
-    TFT_SetCursor(0U, 88U);
-    TFT_WriteString("SW1:NEXT");
-    TFT_SetCursor(0U, 104U);
-    TFT_WriteString("SW2:RUN");
-    TFT_SetCursor(0U, 120U);
-    TFT_WriteString("SW4:EXIT");
 }
 
 static void TaskManager_ReturnToMenu(void)
