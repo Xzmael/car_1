@@ -33,11 +33,11 @@ static void Motor_SetDuty(uint8_t leftDuty, uint8_t rightDuty)
     const uint32_t leftCompare = ((uint32_t) leftDuty * MOTOR_PWM_PERIOD) / MOTOR_MAX_DUTY;
     const uint32_t rightCompare = ((uint32_t) rightDuty * MOTOR_PWM_PERIOD) / MOTOR_MAX_DUTY;
 
-    /* TB6612 B channel drives the left wheel; A channel drives the right wheel. */
-    DL_TimerG_setCaptureCompareValue(MOTOR_PWMB_INST, leftCompare,
-        GPIO_MOTOR_PWMB_C1_IDX);
-    DL_TimerG_setCaptureCompareValue(MOTOR_PWMA_INST, rightCompare,
+    /* TB6612 A channel drives the left wheel; B channel drives the right wheel. */
+    DL_TimerG_setCaptureCompareValue(MOTOR_PWMA_INST, leftCompare,
         GPIO_MOTOR_PWMA_C0_IDX);
+    DL_TimerG_setCaptureCompareValue(MOTOR_PWMB_INST, rightCompare,
+        GPIO_MOTOR_PWMB_C1_IDX);
     motorStatus.leftDuty = leftDuty;
     motorStatus.rightDuty = rightDuty;
 }
