@@ -1,3 +1,4 @@
+// @cliArgs --device "MSPM0G3507" --package "LQFP-64(PM)" --product "mspm0_sdk@2.11.00.07"
 /**
  * X42S lift platform: MSPM0G3507 LQFP-64.
  */
