@@ -1,0 +1,76 @@
+/**
+ * X42S lift platform: MSPM0G3507 LQFP-64.
+ */
+const GPIO = scripting.addModule("/ti/driverlib/GPIO", {}, false);
+const GPIO_BUZZER = GPIO.addInstance();
+const GPIO_OLED_SCL = GPIO.addInstance();
+const GPIO_OLED_SDA = GPIO.addInstance();
+const GPIO_KEY = GPIO.addInstance();
+const GPIO_STEPPER = GPIO.addInstance();
+const TIMER = scripting.addModule("/ti/driverlib/TIMER", {}, false);
+const TIMER_STEPPER = TIMER.addInstance();
+const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
+const Board = scripting.addModule("/ti/driverlib/Board", {}, false);
+
+GPIO_BUZZER.$name = "BUZZER";
+GPIO_BUZZER.associatedPins[0].$name = "BUZZER_PIN";
+GPIO_BUZZER.associatedPins[0].initialValue = "SET";
+GPIO_BUZZER.associatedPins[0].pin.$assign = "PB23";
+
+/* Software I2C pins for the SSD1306 OLED. */
+GPIO_OLED_SCL.$name = "OLED_SCL";
+GPIO_OLED_SCL.associatedPins[0].$name = "SCL_PIN";
+GPIO_OLED_SCL.associatedPins[0].initialValue = "SET";
+GPIO_OLED_SCL.associatedPins[0].pin.$assign = "PA31";
+GPIO_OLED_SDA.$name = "OLED_SDA";
+GPIO_OLED_SDA.associatedPins[0].$name = "SDA_PIN";
+GPIO_OLED_SDA.associatedPins[0].initialValue = "SET";
+GPIO_OLED_SDA.associatedPins[0].pin.$assign = "PA28";
+
+GPIO_KEY.$name = "KEY";
+GPIO_KEY.associatedPins.create(2);
+GPIO_KEY.associatedPins[0].$name = "SW1";
+GPIO_KEY.associatedPins[0].direction = "INPUT";
+GPIO_KEY.associatedPins[0].internalResistor = "PULL_UP";
+GPIO_KEY.associatedPins[0].pin.$assign = "PB20";
+GPIO_KEY.associatedPins[1].$name = "SW2";
+GPIO_KEY.associatedPins[1].direction = "INPUT";
+GPIO_KEY.associatedPins[1].internalResistor = "PULL_UP";
+GPIO_KEY.associatedPins[1].pin.$assign = "PB21";
+
+GPIO_STEPPER.$name = "STEP";
+GPIO_STEPPER.associatedPins.create(6);
+GPIO_STEPPER.associatedPins[0].$name = "A_EN";
+GPIO_STEPPER.associatedPins[0].initialValue = "SET";
+GPIO_STEPPER.associatedPins[0].pin.$assign = "PA8";
+GPIO_STEPPER.associatedPins[1].$name = "A_PUL";
+GPIO_STEPPER.associatedPins[1].initialValue = "SET";
+GPIO_STEPPER.associatedPins[1].pin.$assign = "PA0";
+GPIO_STEPPER.associatedPins[2].$name = "A_DIR";
+GPIO_STEPPER.associatedPins[2].pin.$assign = "PA1";
+GPIO_STEPPER.associatedPins[3].$name = "B_EN";
+GPIO_STEPPER.associatedPins[3].initialValue = "SET";
+GPIO_STEPPER.associatedPins[3].pin.$assign = "PB27";
+GPIO_STEPPER.associatedPins[4].$name = "B_PUL";
+GPIO_STEPPER.associatedPins[4].initialValue = "SET";
+GPIO_STEPPER.associatedPins[4].pin.$assign = "PA27";
+GPIO_STEPPER.associatedPins[5].$name = "B_DIR";
+GPIO_STEPPER.associatedPins[5].pin.$assign = "PA26";
+
+/* 1 kHz interrupt toggles the active-low PUL signals, producing 500 Hz steps. */
+TIMER_STEPPER.$name = "STEPPER_TIMER";
+TIMER_STEPPER.profile = "CUSTOM";
+TIMER_STEPPER.timerClkSrc = "BUSCLK";
+TIMER_STEPPER.timerClkDiv = 1;
+TIMER_STEPPER.timerClkPrescale = 1;
+TIMER_STEPPER.timerPeriod = "1 ms";
+TIMER_STEPPER.timerMode = "PERIODIC";
+TIMER_STEPPER.timerStartTimer = false;
+TIMER_STEPPER.interrupts = ["ZERO"];
+TIMER_STEPPER.interruptPriority = "1";
+TIMER_STEPPER.peripheral.$assign = "TIMG0";
+
+SYSCTL.forceDefaultClkConfig = true;
+Board.peripheral.$suggestSolution = "DEBUGSS";
+Board.peripheral.swclkPin.$suggestSolution = "PA20";
+Board.peripheral.swdioPin.$suggestSolution = "PA19";
