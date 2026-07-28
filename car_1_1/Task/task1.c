@@ -10,7 +10,7 @@
 #include "tft.h"
 #include "IMU660RB/imu660rb.h"
 
-#define TASK1_DUTY (20U)
+#define TASK1_DUTY (25U)
 #define TASK1_LED_FLASH_TICKS (160U)
 #define TASK1_BUZZER_TICKS (60U)
 #define TASK1_GRAY_STARTUP_TICKS (20U)
