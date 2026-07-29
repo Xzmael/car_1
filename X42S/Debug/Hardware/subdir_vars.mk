@@ -11,7 +11,8 @@ C_SRCS += \
 ../Hardware/oled.c \
 ../Hardware/stepper.c \
 ../Hardware/origin_sensor.c \
-../Hardware/vision_uart.c 
+../Hardware/vision_uart.c \
+../Hardware/IMU660RB/imu660rb.c 
 
 C_DEPS += \
 ./Hardware/buzzer.d \
@@ -19,7 +20,8 @@ C_DEPS += \
 ./Hardware/oled.d \
 ./Hardware/stepper.d \
 ./Hardware/origin_sensor.d \
-./Hardware/vision_uart.d 
+./Hardware/vision_uart.d \
+./Hardware/IMU660RB/imu660rb.d 
 
 OBJS += \
 ./Hardware/buzzer.o \
@@ -27,7 +29,8 @@ OBJS += \
 ./Hardware/oled.o \
 ./Hardware/stepper.o \
 ./Hardware/origin_sensor.o \
-./Hardware/vision_uart.o 
+./Hardware/vision_uart.o \
+./Hardware/IMU660RB/imu660rb.o 
 
 OBJS__QUOTED += \
 "Hardware\buzzer.o" \
@@ -35,7 +38,8 @@ OBJS__QUOTED += \
 "Hardware\oled.o" \
 "Hardware\stepper.o" \
 "Hardware\origin_sensor.o" \
-"Hardware\vision_uart.o" 
+"Hardware\vision_uart.o" \
+"Hardware\IMU660RB\imu660rb.o" 
 
 C_DEPS__QUOTED += \
 "Hardware\buzzer.d" \
@@ -43,7 +47,8 @@ C_DEPS__QUOTED += \
 "Hardware\oled.d" \
 "Hardware\stepper.d" \
 "Hardware\origin_sensor.d" \
-"Hardware\vision_uart.d" 
+"Hardware\vision_uart.d" \
+"Hardware\IMU660RB\imu660rb.d" 
 
 C_SRCS__QUOTED += \
 "../Hardware/buzzer.c" \
@@ -51,6 +56,7 @@ C_SRCS__QUOTED += \
 "../Hardware/oled.c" \
 "../Hardware/stepper.c" \
 "../Hardware/origin_sensor.c" \
-"../Hardware/vision_uart.c" 
+"../Hardware/vision_uart.c" \
+"../Hardware/IMU660RB/imu660rb.c" 
 
 

@@ -2,6 +2,7 @@
 
 #include "buzzer.h"
 #include "ball_balance.h"
+#include "Hardware/IMU660RB/imu660rb.h"
 #include "key.h"
 #include "oled.h"
 #include "origin_sensor.h"
@@ -35,9 +36,15 @@ static uint16_t screenPeriod;
 
 static void Task1_ShowStatus(void)
 {
+    const IMU660RB_Data *imu = IMU660RB_GetData();
     OLED_Clear();
     OLED_SetCursor(0U, 0U);
-    OLED_WriteString("BALL CTRL");
+    OLED_WriteString("ANG:");
+    if (IMU660RB_GetStatus() == IMU660RB_STATUS_OK) OLED_WriteFloat2(imu->rodAngleDeg);
+    else {
+        OLED_WriteString("ERR ID:");
+        OLED_WriteUInt(IMU660RB_GetDeviceId());
+    }
     OLED_SetCursor(0U, 16U);
     OLED_WriteString("PX:");
     OLED_WriteInt(BallBalance_GetPixel());
@@ -92,6 +99,8 @@ void Task1_Init(void)
     BallBalance_Init();
     OriginSensor_Init();
     VisionUart_Init();
+    IMU660RB_SetRodAxis(IMU660RB_ROD_AXIS_PITCH, false);
+    (void) IMU660RB_Init();
     Task1_ShowStatus();
 }
 
@@ -99,6 +108,8 @@ void Task1_Update(void)
 {
     const uint8_t pressed = Key_GetPressed();
     VisionUart_Frame frame;
+
+    (void) IMU660RB_Update();
 
     if ((pressed & KEY_SW2) != 0U) {
         if ((state == TASK1_READY) || (state == TASK1_STOPPED) ||
@@ -170,6 +181,7 @@ void Task1_Update(void)
 void Task1_Tick1ms(void)
 {
     VisionUart_Tick1ms();
+    IMU660RB_Tick1ms();
     if (screenPeriod != 0U) screenPeriod--;
     screenDirty = true;
 }

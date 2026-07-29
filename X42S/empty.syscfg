@@ -11,6 +11,9 @@ const GPIO_STEPPER = GPIO.addInstance();
 const GPIO_ORIGIN = GPIO.addInstance();
 const UART = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART_VISION = UART.addInstance();
+const GPIO_IMU_BUS = GPIO.addInstance();
+const GPIO_IMU_CTRL = GPIO.addInstance();
+const GPIO_IMU_INT = GPIO.addInstance();
 const TIMER = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER_STEPPER = TIMER.addInstance();
 const SYSCTL = scripting.addModule("/ti/driverlib/SYSCTL");
@@ -74,6 +77,30 @@ UART_VISION.enableFIFO = true;
 UART_VISION.targetBaudRate = 115200;
 UART_VISION.peripheral.$assign = "UART0";
 UART_VISION.peripheral.rxPin.$assign = "PA11";
+
+/* PB18/PB17 have no hardware-I2C mux on LQFP-64, so use software I2C. */
+GPIO_IMU_BUS.$name = "IMU_BUS";
+GPIO_IMU_BUS.associatedPins.create(2);
+GPIO_IMU_BUS.associatedPins[0].$name = "SCL";
+GPIO_IMU_BUS.associatedPins[0].initialValue = "SET";
+GPIO_IMU_BUS.associatedPins[0].pin.$assign = "PB18";
+GPIO_IMU_BUS.associatedPins[1].$name = "SDA";
+GPIO_IMU_BUS.associatedPins[1].initialValue = "SET";
+GPIO_IMU_BUS.associatedPins[1].pin.$assign = "PB17";
+
+GPIO_IMU_CTRL.$name = "IMU_CTRL";
+GPIO_IMU_CTRL.associatedPins.create(2);
+GPIO_IMU_CTRL.associatedPins[0].$name = "SA0";
+GPIO_IMU_CTRL.associatedPins[0].initialValue = "CLEARED";
+GPIO_IMU_CTRL.associatedPins[0].pin.$assign = "PA13";
+GPIO_IMU_CTRL.associatedPins[1].$name = "CS";
+GPIO_IMU_CTRL.associatedPins[1].initialValue = "SET";
+GPIO_IMU_CTRL.associatedPins[1].pin.$assign = "PB7";
+
+GPIO_IMU_INT.$name = "IMU_INT1";
+GPIO_IMU_INT.associatedPins[0].$name = "INT1";
+GPIO_IMU_INT.associatedPins[0].direction = "INPUT";
+GPIO_IMU_INT.associatedPins[0].pin.$assign = "PA17";
 
 /* 1 kHz interrupt toggles the active-low PUL signals, producing 500 Hz steps. */
 TIMER_STEPPER.$name = "STEPPER_TIMER";
