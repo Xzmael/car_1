@@ -185,7 +185,6 @@ void Task2_Update(void)
                 Task2_EnterFollowing(TASK2_B_TO_C);
             }
         } else if (taskState == TASK2_B_TO_C) {
-            LineControl_Run();
             if (Task2_WhiteConfirmed()) {
                 LineControl_Stop();
                 Motor_HoldYawTargetStart(TASK2_STRAIGHT_DUTY, yawAB + 180.0f);
@@ -199,7 +198,6 @@ void Task2_Update(void)
                 Task2_EnterFollowing(TASK2_D_TO_A);
             }
         } else if (taskState == TASK2_D_TO_A) {
-            LineControl_Run();
             if (Task2_WhiteConfirmed()) {
                 LineControl_Stop();
                 taskState = TASK2_DONE;
@@ -208,6 +206,11 @@ void Task2_Update(void)
             }
         }
         Task2_UpdateAlarm();
+    }
+
+    /* Run line correction on every main-loop pass instead of at the IMU rate. */
+    if ((taskState == TASK2_B_TO_C) || (taskState == TASK2_D_TO_A)) {
+        LineControl_Run();
     }
 
     if (imuUpdated && (++displayDivider >= TASK2_DISPLAY_SAMPLES)) {

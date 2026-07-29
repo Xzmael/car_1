@@ -3,19 +3,19 @@
 #include "motor.h"
 
 #define LINE_BASE_DUTY       (35)
+#define LINE_CURVE_DUTY      (27)
+#define LINE_SHARP_CURVE_DUTY (22)
 #define LINE_ALL_BLACK_DUTY  (21)
 #define LINE_HARD_OUTER_DUTY (30)
 #define LINE_MAX_CORRECTION  (32)
-#define LINE_P_GAIN          (1.50f)
-#define LINE_D_GAIN          (1.20f)
-#define LINE_TURN_FORWARD_SAMPLES (6U)
+#define LINE_P_GAIN          (2.40f)
+#define LINE_D_GAIN          (1.50f)
 #define LINE_CENTER_MASK          (0x0060U)
 #define LINE_LEFT_OUTER_MASK      (0x0003U)
 #define LINE_RIGHT_OUTER_MASK     (0x0C00U)
 
 static int16_t previousPosition;
 static LineControl_Mode turnMode;
-static uint8_t turnForwardSamples;
 static uint8_t centerSamples;
 static bool lineControlRunning;
 
@@ -30,7 +30,6 @@ void LineControl_Init(void)
 {
     previousPosition = 0;
     turnMode = LINE_CONTROL_TRACKING;
-    turnForwardSamples = 0U;
     centerSamples = 0U;
     lineControlRunning = false;
 }
@@ -43,16 +42,6 @@ LineControl_Output LineControl_Update(Gray_Result gray)
 
     output.position = gray.position;
 
-    if (turnMode == LINE_CONTROL_TURN_FORWARD) {
-        output.leftDuty = LINE_BASE_DUTY;
-        output.rightDuty = LINE_BASE_DUTY;
-        output.mode = LINE_CONTROL_TURN_FORWARD;
-        if (--turnForwardSamples == 0U) {
-            turnMode = (previousPosition < 0) ? LINE_CONTROL_HARD_LEFT :
-                                                 LINE_CONTROL_HARD_RIGHT;
-        }
-        return output;
-    }
     if ((turnMode == LINE_CONTROL_HARD_LEFT) ||
         (turnMode == LINE_CONTROL_HARD_RIGHT)) {
         if ((gray.status == GRAY_STATUS_NORMAL) &&
@@ -92,25 +81,23 @@ LineControl_Output LineControl_Update(Gray_Result gray)
         return output;
     }
 
-    /* S1/S2 or S11/S12 triggers the delayed right-angle turn sequence. */
+    /* At high speed the outer sensors must start the pivot immediately. */
     if ((gray.raw & LINE_LEFT_OUTER_MASK) != 0U) {
         previousPosition = gray.position;
-        turnMode = LINE_CONTROL_TURN_FORWARD;
-        turnForwardSamples = LINE_TURN_FORWARD_SAMPLES;
+        turnMode = LINE_CONTROL_HARD_LEFT;
         centerSamples = 0U;
-        output.leftDuty = LINE_BASE_DUTY;
-        output.rightDuty = LINE_BASE_DUTY;
-        output.mode = LINE_CONTROL_TURN_FORWARD;
+        output.leftDuty = 0U;
+        output.rightDuty = LINE_HARD_OUTER_DUTY;
+        output.mode = LINE_CONTROL_HARD_LEFT;
         return output;
     }
     if ((gray.raw & LINE_RIGHT_OUTER_MASK) != 0U) {
         previousPosition = gray.position;
-        turnMode = LINE_CONTROL_TURN_FORWARD;
-        turnForwardSamples = LINE_TURN_FORWARD_SAMPLES;
+        turnMode = LINE_CONTROL_HARD_RIGHT;
         centerSamples = 0U;
-        output.leftDuty = LINE_BASE_DUTY;
-        output.rightDuty = LINE_BASE_DUTY;
-        output.mode = LINE_CONTROL_TURN_FORWARD;
+        output.leftDuty = LINE_HARD_OUTER_DUTY;
+        output.rightDuty = 0U;
+        output.mode = LINE_CONTROL_HARD_RIGHT;
         return output;
     }
 
@@ -119,8 +106,13 @@ LineControl_Output LineControl_Update(Gray_Result gray)
                             (LINE_D_GAIN * (float) delta));
     if (correction > LINE_MAX_CORRECTION) correction = LINE_MAX_CORRECTION;
     if (correction < -LINE_MAX_CORRECTION) correction = -LINE_MAX_CORRECTION;
-    output.leftDuty = LineControl_ClampDuty(LINE_BASE_DUTY + correction);
-    output.rightDuty = LineControl_ClampDuty(LINE_BASE_DUTY - correction);
+    {
+        const int16_t magnitude = (gray.position < 0) ? -gray.position : gray.position;
+        const int16_t baseDuty = (magnitude >= 7) ? LINE_SHARP_CURVE_DUTY :
+                                 ((magnitude >= 3) ? LINE_CURVE_DUTY : LINE_BASE_DUTY);
+        output.leftDuty = LineControl_ClampDuty(baseDuty + correction);
+        output.rightDuty = LineControl_ClampDuty(baseDuty - correction);
+    }
     output.mode = LINE_CONTROL_TRACKING;
     previousPosition = gray.position;
     return output;

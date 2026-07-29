@@ -91,11 +91,9 @@ void Task3_Update(void)
             LineControl_Start();
             motorStarted = true;
         }
-        if (motorStarted) {
-            /* The shared controller drives straight when every sensor is white. */
-            LineControl_Run();
-        }
     }
+    /* Gray control must not wait for the slower IMU data-ready cadence. */
+    if (motorStarted) LineControl_Run();
     if (imuUpdated && (++displayDivider >= TASK3_DISPLAY_SAMPLES)) {
         displayDivider = 0U;
         Task3_ShowStatus();
