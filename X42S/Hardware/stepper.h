@@ -10,9 +10,11 @@ typedef enum {
 } Stepper_Direction;
 
 void Stepper_Init(void);
-bool Stepper_MoveBoth(Stepper_Direction direction, uint32_t pulses);
+bool Stepper_MoveA(Stepper_Direction direction, uint32_t pulses);
 void Stepper_Stop(void);
 bool Stepper_IsBusy(void);
+int32_t Stepper_GetPosition(void);
+void Stepper_SetPosition(int32_t position);
 void Stepper_TimerIRQHandler(void);
 
 #endif

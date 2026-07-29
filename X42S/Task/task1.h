@@ -3,5 +3,6 @@
 
 void Task1_Init(void);
 void Task1_Update(void);
+void Task1_Tick1ms(void);
 
 #endif

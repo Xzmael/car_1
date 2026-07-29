@@ -6,8 +6,8 @@ SHELL = cmd.exe
 
 CG_TOOL_ROOT := E:/ccs_app/ccs/tools/compiler/ti-cgt-armllvm_5.1.1.LTS
 
-GEN_OPTS__FLAG := 
-GEN_CMDS__FLAG := 
+GEN_OPTS__FLAG := @"./device.opt" 
+GEN_CMDS__FLAG := -Wl,-l"./device_linker.cmd" 
 
 ORDERED_OBJS += \
 "./empty.o" \
@@ -17,9 +17,11 @@ ORDERED_OBJS += \
 "./Hardware/key.o" \
 "./Hardware/oled.o" \
 "./Hardware/stepper.o" \
+"./Hardware/origin_sensor.o" \
+"./Hardware/vision_uart.o" \
 "./Task/task1.o" \
+"./libruary/ball_balance.o" \
 "./libruary/task_manager.o" \
- -Wl,-l"./device_linker.cmd" \
 $(GEN_CMDS__FLAG) \
 -Wl,-ldevice.cmd.genlibs \
 -Wl,-llibc.a \
@@ -148,9 +150,9 @@ X42S.out: $(OBJS) $(GEN_CMDS)
 
 # Other Targets
 clean:
-	-$(RM) $(GEN_MISC_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "Hardware\buzzer.o" "Hardware\key.o" "Hardware\oled.o" "Hardware\stepper.o" "Task\task1.o" "libruary\task_manager.o" 
-	-$(RM) "empty.d" "Hardware\buzzer.d" "Hardware\key.d" "Hardware\oled.d" "Hardware\stepper.d" "Task\task1.d" "libruary\task_manager.d" 
+	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Hardware\buzzer.o" "Hardware\key.o" "Hardware\oled.o" "Hardware\stepper.o" "Hardware\origin_sensor.o" "Hardware\vision_uart.o" "Task\task1.o" "libruary\ball_balance.o" "libruary\task_manager.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Hardware\buzzer.d" "Hardware\key.d" "Hardware\oled.d" "Hardware\stepper.d" "Hardware\origin_sensor.d" "Hardware\vision_uart.d" "Task\task1.d" "libruary\ball_balance.d" "libruary\task_manager.d" 
 	-@echo ' '
 
 .PHONY: all clean dependents

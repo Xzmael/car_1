@@ -4,7 +4,14 @@
 #include "Hardware/key.h"
 #include "Hardware/oled.h"
 #include "Hardware/stepper.h"
+#include "Hardware/vision_uart.h"
 #include "libruary/task_manager.h"
+#include "Task/task1.h"
+
+void SysTick_Handler(void)
+{
+    Task1_Tick1ms();
+}
 
 void STEPPER_TIMER_INST_IRQHandler(void)
 {
@@ -23,9 +30,11 @@ int main(void)
     (void) OLED_Init();
     TaskManager_Init();
 
+    SysTick_Config(32000U);
     NVIC_EnableIRQ(STEPPER_TIMER_INST_INT_IRQN);
     while (1) {
         Key_Scan();
+        VisionUart_Poll();
         TaskManager_Update();
     }
 }
