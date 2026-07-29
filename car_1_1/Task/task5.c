@@ -10,7 +10,7 @@
 #include "tft.h"
 #include "vision_uart.h"
 
-#define TASK5_BASE_DUTY       (15U)
+#define TASK5_BASE_DUTY       (20U)
 #define TASK5_CENTER_X        (224)
 #define TASK5_CENTER_DEADBAND (20)
 #define TASK5_MAX_CORRECTION  (10)
