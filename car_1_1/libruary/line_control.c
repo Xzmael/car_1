@@ -2,13 +2,13 @@
 
 #include "motor.h"
 
-#define LINE_BASE_DUTY       (25)
-#define LINE_ALL_BLACK_DUTY  (15)
-#define LINE_HARD_OUTER_DUTY (22)
-#define LINE_MAX_CORRECTION  (22)
+#define LINE_BASE_DUTY       (35)
+#define LINE_ALL_BLACK_DUTY  (21)
+#define LINE_HARD_OUTER_DUTY (30)
+#define LINE_MAX_CORRECTION  (32)
 #define LINE_P_GAIN          (1.50f)
 #define LINE_D_GAIN          (1.20f)
-#define LINE_TURN_FORWARD_SAMPLES (15U)
+#define LINE_TURN_FORWARD_SAMPLES (6U)
 #define LINE_CENTER_MASK          (0x0060U)
 #define LINE_LEFT_OUTER_MASK      (0x0003U)
 #define LINE_RIGHT_OUTER_MASK     (0x0C00U)

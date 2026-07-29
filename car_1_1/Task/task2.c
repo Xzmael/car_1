@@ -10,9 +10,9 @@
 #include "IMU660RB/imu660rb.h"
 #include "line_control.h"
 
-#define TASK2_STRAIGHT_DUTY       (30U)
+#define TASK2_STRAIGHT_DUTY       (42U)
 #define TASK2_START_DELAY_SAMPLES (208U)
-#define TASK2_EDGE_SAMPLES        (2U)
+#define TASK2_EDGE_SAMPLES        (1U)
 #define TASK2_ALARM_SAMPLES       (11U)
 #define TASK2_DISPLAY_SAMPLES     (26U)
 
